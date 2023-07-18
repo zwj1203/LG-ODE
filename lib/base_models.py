@@ -21,15 +21,18 @@ class VAE_Baseline(nn.Module):
 
 		self.z0_prior = z0_prior
 
-	def get_gaussian_likelihood(self, truth, pred_y,temporal_weights, mask ):
+	def get_gaussian_likelihood(self, truth, pred_y,temporal_weights):
 		# pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
 		# truth shape  [n_traj, n_tp, n_dim]
 
 		# Compute likelihood of the data under the predictions
 		truth_repeated = truth.repeat(pred_y.size(0), 1, 1, 1)
-		mask = mask.repeat(pred_y.size(0), 1, 1, 1)
-		log_density_data = masked_gaussian_log_density(pred_y, truth_repeated,
-			obsrv_std = self.obsrv_std, mask = mask,temporal_weights= temporal_weights) #【num_traj,num_sample_traj] [250,3]
+		# mask = mask.repeat(pred_y.size(0), 1, 1, 1)
+		# log_density_data = masked_gaussian_log_density(pred_y, truth_repeated,
+		# 	obsrv_std = self.obsrv_std, mask = mask,temporal_weights= temporal_weights) #【num_traj,num_sample_traj] [250,3]
+		log_density_data = origin_gaussian_log_density(pred_y, truth_repeated,
+													   obsrv_std=self.obsrv_std, temporal_weights=temporal_weights)  # 【num_traj,num_sample_traj] [250,3]
+
 		log_density_data = log_density_data.permute(1,0)
 		log_density = torch.mean(log_density_data, 1)
 
@@ -37,17 +40,18 @@ class VAE_Baseline(nn.Module):
 		return log_density
 
 
-	def get_mse(self, truth, pred_y, mask = None):
+	def get_mse(self, truth, pred_y):
 		# pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
 		# truth shape  [n_traj, n_tp, n_dim]
 		n_traj, n_tp, n_dim = truth.size()
 
 		# Compute likelihood of the data under the predictions
 		truth_repeated = truth.repeat(pred_y.size(0), 1, 1, 1)
-		mask = mask.repeat(pred_y.size(0), 1, 1, 1)
+		# mask = mask.repeat(pred_y.size(0), 1, 1, 1)
 
 		# Compute likelihood of the data under the predictions
-		log_density_data = compute_mse(pred_y, truth_repeated, mask = mask)
+		# log_density_data = compute_mse(pred_y, truth_repeated, mask = mask)
+		log_density_data=compute_orgin_mse(pred_y, truth_repeated)
 		# shape: [1]
 		return torch.mean(log_density_data)
 
@@ -83,14 +87,15 @@ class VAE_Baseline(nn.Module):
 
 
 		# Compute likelihood of all the points
-		rec_likelihood = self.get_gaussian_likelihood(
-			batch_dict_decoder["data"], pred_y,temporal_weights,
-			mask=batch_dict_decoder["mask"])   #negative value
+		# rec_likelihood = self.get_gaussian_likelihood(
+		# 	batch_dict_decoder["data"], pred_y,temporal_weights,
+		# 	mask=batch_dict_decoder["mask"])   #negative value
 
+		rec_likelihood = self.get_gaussian_likelihood(
+			batch_dict_decoder["data"], pred_y, temporal_weights)  # negative value
 
 		mse = self.get_mse(
-			batch_dict_decoder["data"], pred_y,
-			mask=batch_dict_decoder["mask"])  # [1]
+			batch_dict_decoder["data"], pred_y)  # [1]
 
 
 		# loss

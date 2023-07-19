@@ -124,7 +124,7 @@ def compute_mse(mu, data, mask):
 	return res
 
 
-def compute_orgin_mse(mu, data):
+def compute_origin_mse(mu, data):
 
 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
 	assert(data.size()[-1] == n_dims)

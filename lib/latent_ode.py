@@ -18,6 +18,7 @@ class LatentGraphODE(VAE_Baseline):
 
 
 
+
 	def get_reconstruction(self, batch_en,batch_de, batch_g,n_traj_samples=1,run_backwards=True):
 
         #Encoder:

@@ -74,40 +74,6 @@ class DiffeqSolver(nn.Module):
 
         pred_y = odeint(self.ode_func, first_point_augumented, time_steps_to_predict,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
-        # def rk4_step(func, y, t, dt):
-        #     """
-        #     Perform one step of fourth-order Runge-Kutta method.
-        #
-        #     Parameters:
-        #     func: Function that computes the derivative of y.
-        #     y: Current value of the dependent variable.
-        #     t: Current value of the independent variable.
-        #     dt: Step size.
-        #     """
-        #     k1 = func(t, y)
-        #     k2 = func(t + dt / 2, y + dt / 2 * k1)
-        #     k3 = func(t + dt / 2, y + dt / 2 * k2)
-        #     k4 = func(t + dt, y + dt * k3)
-        #     return y + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-        #
-        # def solve_ode_rk4(func, y0, t):
-        #     """
-        #     Solve an ODE using fourth-order Runge-Kutta method.
-        #
-        #     Parameters:
-        #     func: Function that computes the derivative of y.
-        #     y0: Initial value of the dependent variable.
-        #     t: Array of time points at which to compute the solution.
-        #     """
-        #     y = torch.zeros((len(t),) + y0.shape, dtype=y0.dtype, device=y0.device)
-        #     y[0] = y0
-        #     for i in range(len(t) - 1):
-        #         dt = t[i + 1] - t[i]
-        #         for j in range(y0.shape[0]):
-        #             y[i + 1, j] = rk4_step(func, y[i, j], t[i], dt)
-        #     return y
-        #
-        # pred_y = solve_ode_rk4(self.ode_func, first_point_augumented, time_steps_to_predict)
 
         '''
         pred_y = self.ode_func(time_steps_to_predict, first_point_augumented)
@@ -130,7 +96,7 @@ class DiffeqSolver(nn.Module):
         if self.args.augment_dim > 0:
             pred_y = pred_y[:, :, :, :-self.args.augment_dim]
 
-        return pred_y,
+        return pred_y
 
     def encode_onehot(self,labels):
         classes = set(labels)

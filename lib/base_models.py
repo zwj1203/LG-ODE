@@ -8,7 +8,7 @@ import torch
 class VAE_Baseline(nn.Module):
 	def __init__(self, input_dim, latent_dim, 
 		z0_prior, device,
-		obsrv_std = 0.01,  lambda_trs=1
+		obsrv_std = 0.01, 
 		):
 
 		super(VAE_Baseline, self).__init__()
@@ -21,8 +21,7 @@ class VAE_Baseline(nn.Module):
 
 		self.z0_prior = z0_prior
 
-		self.lambda_trs = lambda_trs
-	def get_gaussian_likelihood(self, truth, pred_y,temporal_weights,mask):
+	def get_gaussian_likelihood(self, truth, pred_y,temporal_weights, mask ):
 		# pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
 		# truth shape  [n_traj, n_tp, n_dim]
 
@@ -31,9 +30,6 @@ class VAE_Baseline(nn.Module):
 		mask = mask.repeat(pred_y.size(0), 1, 1, 1)
 		log_density_data = masked_gaussian_log_density(pred_y, truth_repeated,
 			obsrv_std = self.obsrv_std, mask = mask,temporal_weights= temporal_weights) #【num_traj,num_sample_traj] [250,3]
-		# log_density_data = origin_gaussian_log_density(pred_y, truth_repeated,
-		# 											   obsrv_std=self.obsrv_std, temporal_weights=temporal_weights)  # 【num_traj,num_sample_traj] [250,3]
-
 		log_density_data = log_density_data.permute(1,0)
 		log_density = torch.mean(log_density_data, 1)
 
@@ -41,8 +37,7 @@ class VAE_Baseline(nn.Module):
 		return log_density
 
 
-
-	def get_mse(self, truth, pred_y,mask):
+	def get_mse(self, truth, pred_y, mask = None):
 		# pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
 		# truth shape  [n_traj, n_tp, n_dim]
 		n_traj, n_tp, n_dim = truth.size()
@@ -53,12 +48,11 @@ class VAE_Baseline(nn.Module):
 
 		# Compute likelihood of the data under the predictions
 		log_density_data = compute_mse(pred_y, truth_repeated, mask = mask)
-		# log_density_data=compute_origin_mse(pred_y, truth_repeated)
 		# shape: [1]
 		return torch.mean(log_density_data)
 
 
-	def compute_all_losses(self, batch_dict_encoder,batch_dict_decoder,batch_dict_graph ,n_traj_samples = 1, kl_coef = 1.,lambda_trs=1):
+	def compute_all_losses(self, batch_dict_encoder,batch_dict_decoder,batch_dict_graph ,n_traj_samples = 1, kl_coef = 1.):
 		# Condition on subsampled points
 		# Make predictions for all the points
 
@@ -89,18 +83,19 @@ class VAE_Baseline(nn.Module):
 
 
 		# Compute likelihood of all the points
-		# rec_likelihood = self.get_gaussian_likelihood(
-		# 	batch_dict_decoder["data"], pred_y,temporal_weights,
-		# 	mask=batch_dict_decoder["mask"])   #negative value
+		rec_likelihood = self.get_gaussian_likelihood(
+			batch_dict_decoder["data"], pred_y,temporal_weights,
+			mask=batch_dict_decoder["mask"])   #negative value
 
-		rec_likelihood = self.get_gaussian_likelihood(batch_dict_decoder["data"], pred_y, temporal_weights)  # negative value
 
-		mse = self.get_mse(batch_dict_decoder["data"], pred_y)  # [1]
+		mse = self.get_mse(
+			batch_dict_decoder["data"], pred_y,
+			mask=batch_dict_decoder["mask"])  # [1]
 
 
 		# loss
 
-		loss = - torch.logsumexp(rec_likelihood  -  kl_coef * kldiv_z0,0)
+		loss = - torch.logsumexp(rec_likelihood -  kl_coef * kldiv_z0,0)
 		if torch.isnan(loss):
 			loss = - torch.mean(rec_likelihood - kl_coef * kldiv_z0,0)
 

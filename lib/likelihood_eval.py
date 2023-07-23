@@ -2,6 +2,9 @@ from lib.likelihood_eval import *
 import torch
 
 
+
+
+
 def gaussian_log_likelihood(mu, data, obsrv_std):
 	log_p = ((mu - data) ** 2) / (2 * obsrv_std * obsrv_std)
 	neg_log_p = -1*log_p
@@ -42,50 +45,23 @@ def compute_masked_likelihood(mu, data, mask, likelihood_func,temporal_weights=N
 	res = res.transpose(0,1)
 	return res
 
-def compute_origin_likelihood(mu, data, likelihood_func, temporal_weights=None):
-    # Compute the likelihood per patient and per attribute so that we don't priorize patients with more measurements
-    n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
 
-    # Compute the log likelihood for each data point given the corresponding mu
-    log_prob = likelihood_func(mu, data)
-
-    # If temporal weights are provided, adjust the log probability accordingly
-    if temporal_weights != None:
-        weight_for_times = torch.cat([temporal_weights for _ in range(n_dims)], dim=1)
-        weight_for_times = weight_for_times.to(mu.device)
-        weight_for_times = weight_for_times.repeat(n_traj_samples, n_traj, 1, 1)
-        log_prob = log_prob * weight_for_times  # adjust the log probability with the temporal weights
-
-    # Sum the log probability across the timepoints for each trajectory and each dimension
-    log_prob_summed = torch.sum(log_prob, dim=2)  # [n_traj_samples, n_traj, n_dims]
-
-    # Normalize the summed log probability by the number of timepoints
-    log_prob_summed_normalized = log_prob_summed / n_timepoints  # normalize by dividing by the number of timepoints
-
-    # Take mean over the number of dimensions
-    res = torch.mean(log_prob_summed_normalized, -1)  # [n_traj_samples, n_traj], average among dimensions
-    res = res.transpose(0, 1)
-    return res
+def compute_masked_likelihood_old(mu, data, mask, likelihood_func):
+	# Compute the likelihood per patient and per attribute so that we don't priorize patients with more measurements
+	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
 
 
+	log_prob = likelihood_func(mu, data)  # [n_traj, n_traj_samples, n_timepoints, n_dims]
+	log_prob_masked = torch.sum(log_prob * mask, dim=2)  # [n_traj, n_traj_samples, n_dims]
 
-
-# def compute_masked_likelihood_old(mu, data, mask, likelihood_func):
-# 	# Compute the likelihood per patient and per attribute so that we don't priorize patients with more measurements
-# 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
-#
-#
-# 	log_prob = likelihood_func(mu, data)  # [n_traj, n_traj_samples, n_timepoints, n_dims]
-# 	log_prob_masked = torch.sum(log_prob * mask, dim=2)  # [n_traj, n_traj_samples, n_dims]
-#
-# 	timelength_per_nodes = torch.sum(mask.permute(0, 1, 3, 2), dim=3)
-# 	assert (not torch.isnan(timelength_per_nodes).any())
-# 	log_prob_masked_normalized = torch.div(log_prob_masked,
-# 										   timelength_per_nodes)  # 【n_traj_sample, n_traj, feature], average each feature by dividing time length
-# 	# Take mean over the number of dimensions
-# 	res = torch.mean(log_prob_masked_normalized, -1)  # 【n_traj_sample, n_traj], average among features.
-# 	res = res.transpose(0, 1)
-# 	return res
+	timelength_per_nodes = torch.sum(mask.permute(0, 1, 3, 2), dim=3)
+	assert (not torch.isnan(timelength_per_nodes).any())
+	log_prob_masked_normalized = torch.div(log_prob_masked,
+										   timelength_per_nodes)  # 【n_traj_sample, n_traj, feature], average each feature by dividing time length
+	# Take mean over the number of dimensions
+	res = torch.mean(log_prob_masked_normalized, -1)  # 【n_traj_sample, n_traj], average among features.
+	res = res.transpose(0, 1)
+	return res
 
 
 def masked_gaussian_log_density(mu, data, obsrv_std, mask,temporal_weights=None):
@@ -97,17 +73,6 @@ def masked_gaussian_log_density(mu, data, obsrv_std, mask,temporal_weights=None)
 	# Shape after permutation: [n_traj, n_traj_samples, n_timepoints, n_dims]
 	func = lambda mu, data: gaussian_log_likelihood(mu, data, obsrv_std = obsrv_std)
 	res = compute_masked_likelihood(mu, data,mask, func,temporal_weights)
-	return res
-
-def origin_gaussian_log_density(mu, data, obsrv_std, temporal_weights=None):
-
-	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
-
-	assert(data.size()[-1] == n_dims)
-
-	# Shape after permutation: [n_traj, n_traj_samples, n_timepoints, n_dims]
-	func = lambda mu, data: gaussian_log_likelihood(mu, data, obsrv_std = obsrv_std)
-	res = compute_origin_likelihood(mu, data, func,temporal_weights)
 	return res
 
 
@@ -123,12 +88,5 @@ def compute_mse(mu, data, mask):
 	res = compute_masked_likelihood(mu, data, mask, mse)
 	return res
 
-
-def compute_origin_mse(mu, data):
-
-	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
-	assert(data.size()[-1] == n_dims)
-
-	res = compute_origin_likelihood(mu, data, mse)
-	return res
+	
 

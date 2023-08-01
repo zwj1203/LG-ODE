@@ -43,8 +43,9 @@ class LatentGraphODE(VAE_Baseline):
 
 
 		# ODE:Shape of sol_y [n_traj_samples, n_samples, n_timepoints, n_latents]
-		sol_y = self.diffeq_solver(torch.unsqueeze(first_point_mu, 0), time_steps_to_predict, batch_g)
-		sol_y_reverse = self.diffeq_solver(torch.unsqueeze(first_point_mu, 0), time_steps_to_predict, batch_g)
+		sol_y,sol_y_reverse = self.diffeq_solver(torch.unsqueeze(first_point_mu, 0), time_steps_to_predict, batch_g)
+
+
 
         # Decoder:
 		pred_x = self.decoder(sol_y)

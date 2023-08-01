@@ -6,7 +6,7 @@ import lib.utils as utils
 
 
 class DiffeqSolver(nn.Module):
-    def __init__(self, ode_func,reverse_ode_func, method,args,
+    def __init__(self, ode_func, reverse_ode_func, method,args,
             odeint_rtol = 1e-3, odeint_atol = 1e-4, device = torch.device("cpu")):
         super(DiffeqSolver, self).__init__()
 
@@ -104,8 +104,7 @@ class DiffeqSolver(nn.Module):
 
         if self.args.augment_dim > 0:
             pred_y = pred_y[:, :, :, :-self.args.augment_dim]
-        print("pred_y_reverse shape:", pred_y_reverse.shape)
-        print("pred_y shape:", pred_y.shape)
+
 
         if ispadding:
             pred_y_reverse = pred_y_reverse[1:, :, :, :]
@@ -124,6 +123,8 @@ class DiffeqSolver(nn.Module):
             pred_y_reverse = pred_y_reverse[:, :, :, :-self.args.augment_dim]
         return pred_y, pred_y_reverse
 
+        print("After return pred_y_reverse shape:", pred_y_reverse.shape)
+        print("pred_y shape:", pred_y.shape)
     def encode_onehot(self,labels):
         classes = set(labels)
         classes_dict = {c: np.identity(len(classes))[i, :] for i, c in

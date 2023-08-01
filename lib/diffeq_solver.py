@@ -79,7 +79,6 @@ class DiffeqSolver(nn.Module):
         pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], time_steps_to_predict_reverse,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
-        # pred_y_reverse = pred_y_reverse_flipped[::-1]
         pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[3])
 
 

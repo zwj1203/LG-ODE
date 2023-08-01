@@ -80,12 +80,14 @@ class DiffeqSolver(nn.Module):
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
         # pred_y_reverse = pred_y_reverse_flipped[::-1]
-        pred_y_reverse = pred_y_reverse_flipped.permute(1, 0, 2, 3).reshape(n_traj_samples, -1, feature)
+        pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[3])
+
 
         '''
         pred_y = self.ode_func(time_steps_to_predict, first_point_augumented)
         pred_y = pred_y.repeat(time_steps_to_predict.shape[0], 1, 1,1)
         '''
+        print("pred_y_reverse_flipped shape:", pred_y_reverse_flipped.shape)
         print("pred_y_reverse shape:", pred_y_reverse.shape)
         print("pred_y shape:", pred_y.shape)
         if ispadding:
@@ -108,11 +110,9 @@ class DiffeqSolver(nn.Module):
 
         if ispadding:
             pred_y_reverse = pred_y_reverse[1:, :, :, :]
-            time_steps_to_predict = time_steps_to_predict[1:]
+            time_steps_to_predict_reverse = time_steps_to_predict_reverse[1:]
 
-
-
-        pred_y_reverse = pred_y_reverse.view(time_steps_to_predict.size(0), -1, pred_y_reverse.size(3)) #[t,n_sample*b*n_ball, d]
+        pred_y_reverse = pred_y_reverse.view(time_steps_to_predict_reverse.size(0), -1, pred_y_reverse.size(3)) #[t,n_sample*b*n_ball, d]
 
         pred_y_reverse = pred_y_reverse.permute(1,0,2) #[n_sample*b*n_ball, time_length, d]
         pred_y_reverse = pred_y_reverse.view(n_traj_samples,n_traj,-1,feature) #[n_sample, b*n_ball, time_length, d]

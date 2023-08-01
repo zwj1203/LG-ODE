@@ -268,7 +268,7 @@ class GraphODEFunc(nn.Module):
 
         if backwards:
             grad = -grad
-        return -grad
+        return grad
 
     def set_graph(self, rec_type,rel_rec,rel_send,edge_types):
         #print(self.nfe)
@@ -339,7 +339,7 @@ class ReverseGraphODEFunc(nn.Module):
 
         if backwards:
             grad = -grad
-        return grad
+        return -grad
 
     def set_graph(self, rec_type,rel_rec,rel_send,edge_types):
         #print(self.nfe)

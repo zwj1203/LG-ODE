@@ -73,7 +73,7 @@ class DiffeqSolver(nn.Module):
 
         pred_y = odeint(self.ode_func, first_point_augumented, time_steps_to_predict,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
-        pred_y_reverse_flipped = odeint(self.ode_func, pred_y[-1], time_steps_to_predict,
+        pred_y_reverse_flipped = odeint(-self.ode_func, pred_y[-1], time_steps_to_predict,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
         pred_y_reverse = pred_y_reverse_flipped[::-1]

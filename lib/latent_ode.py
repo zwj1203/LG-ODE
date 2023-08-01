@@ -25,9 +25,9 @@ class LatentGraphODE(VAE_Baseline):
 														  batch_en.edge_index, batch_en.pos, batch_en.edge_same,
 														  batch_en.batch, batch_en.y)  # [num_ball,10]
 
-		means_z0 = first_point_mu.repeat(n_traj_samples,1,1) #[3,num_ball,10]
-		sigmas_z0 = first_point_std.repeat(n_traj_samples,1,1) #[3,num_ball,10]
-		first_point_enc = utils.sample_standard_gaussian(means_z0, sigmas_z0) #[3,num_ball,10]
+		# means_z0 = first_point_mu.repeat(n_traj_samples,1,1) #[3,num_ball,10]
+		# sigmas_z0 = first_point_std.repeat(n_traj_samples,1,1) #[3,num_ball,10]
+		# first_point_enc = utils.sample_standard_gaussian(means_z0, sigmas_z0) #[3,num_ball,10]
 
 
 		first_point_std = first_point_std.abs()
@@ -38,24 +38,24 @@ class LatentGraphODE(VAE_Baseline):
 
 		assert (torch.sum(first_point_std < 0) == 0.)
 		assert (not torch.isnan(time_steps_to_predict).any())
-		assert (not torch.isnan(first_point_enc).any())
+		# assert (not torch.isnan(first_point_enc).any())
 
 
 
 		# ODE:Shape of sol_y [n_traj_samples, n_samples, n_timepoints, n_latents]
-		sol_y = self.diffeq_solver(first_point_enc, time_steps_to_predict, batch_g)
-
+		sol_y = self.diffeq_solver(torch.unsqueeze(first_point_mu, 0), time_steps_to_predict, batch_g)
+		sol_y_reverse = self.diffeq_solver(torch.unsqueeze(first_point_mu, 0), time_steps_to_predict, batch_g)
 
         # Decoder:
 		pred_x = self.decoder(sol_y)
-
+		pred_x_reverse = self.decoder(sol_y_reverse)
 
 		all_extra_info = {
-			"first_point": (torch.unsqueeze(first_point_mu,0), torch.unsqueeze(first_point_std,0), first_point_enc),
+			"first_point": (torch.unsqueeze(first_point_mu,0), torch.unsqueeze(first_point_std,0), torch.unsqueeze(first_point_mu, 0)),
 			"latent_traj": sol_y.detach()
 		}
 
-		return pred_x, all_extra_info, None
+		return pred_x,pred_x_reverse, all_extra_info, None
 
 
 

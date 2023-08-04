@@ -236,10 +236,10 @@ if __name__ == '__main__':
         if epo % n_iters_to_viz == 0:
             model.eval()
 
-            reverse_f_lambda = 0.5
-            # reverse_f_lambda = -0.151 * np.log(epo) + 0.9108
-            reverse_gt_lambda =0
-            # reverse_gt_lambda = -0.151 * np.log(epo) + 0.9108
+            # reverse_f_lambda = 0.5
+            reverse_f_lambda = (-0.151 * np.log(epo) + 0.9108)*0.5
+            # reverse_gt_lambda =0
+            reverse_gt_lambda = (-0.151 * np.log(epo) + 0.9108)*0.5
 
             test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,

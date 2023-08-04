@@ -16,7 +16,7 @@ from lib.utils import compute_loss_all_batches
 parser = argparse.ArgumentParser('Latent ODE')
 parser.add_argument('--n-balls', type=int, default=5,
                     help='Number of objects in the dataset.')
-parser.add_argument('--niters', type=int, default=50)
+parser.add_argument('--niters', type=int, default=100)
 parser.add_argument('--lr', type=float, default=5e-4, help="Starting learning rate.")
 parser.add_argument('-b', '--batch-size', type=int, default=256)
 parser.add_argument('--save', type=str, default='experiments/', help="Path for save checkpoints")
@@ -52,15 +52,15 @@ args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
 
 if args.data == "spring":
-    args.dataset = 'data/example_data'
+    args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_springs5'
     args.total_ode_step = 60
 elif args.data == "charged":
-    args.dataset = 'data/charged'
+    args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_charged5'
     args.total_ode_step = 60
 elif args.data == "motion":
-    args.dataset = 'data/motion'
+    args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_motion'
     args.total_ode_step = 49
     args.n_balls = 31
@@ -68,7 +68,7 @@ elif args.data == "motion":
 ############ CPU AND GPU related, Mode related, Dataset Related
 if torch.cuda.is_available():
     print("Using GPU" + "-" * 80)
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
 else:
     print("Using CPU" + "-" * 80)
     device = torch.device("cpu")
@@ -154,12 +154,15 @@ if __name__ == '__main__':
     best_test_mse = np.inf
     n_iters_to_viz = 1
 
+    #weight of reverse:
+    reverse_f_lambda=1
+    reverse_gt_lambda=1
 
-    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph, kl_coef):
+    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,reverse_f_lambda,reverse_gt_lambda):
 
         optimizer.zero_grad()
         train_res = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
-                                             n_traj_samples=3, kl_coef=kl_coef)
+                                             n_traj_samples=3, reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
         loss = train_res["loss"]
         loss.backward()
@@ -172,13 +175,16 @@ if __name__ == '__main__':
         del loss
         torch.cuda.empty_cache()
         # train_res, loss
-        return loss_value, train_res["mse"], train_res["likelihood"]
+        return loss_value, train_res["mse"], train_res["likelihood"],train_res["forward_gt_mse"],train_res["reverse_f_mse"],train_res["reverse_gt_mse"]
 
 
     def train_epoch(epo):
         model.train()
         loss_list = []
         mse_list = []
+        forward_gt_mse_list =[]
+        reverse_f_mse_list = []
+        reverse_gt_mse_list = []
         likelihood_list = []
         kl_first_p_list = []
         std_first_p_list = []
@@ -190,10 +196,10 @@ if __name__ == '__main__':
             # utils.update_learning_rate(optimizer, decay_rate=0.999, lowest=args.lr / 10)
             wait_until_kl_inc = 10
 
-            if itr < wait_until_kl_inc:
-                kl_coef = 0.
-            else:
-                kl_coef = (1 - 0.99 ** (itr - wait_until_kl_inc))
+            # if itr < wait_until_kl_inc:
+            #     kl_coef = 0.
+            # else:
+            #     kl_coef = (1 - 0.99 ** (itr - wait_until_kl_inc))
 
             batch_dict_encoder = utils.get_next_batch_new(train_encoder, device)
 
@@ -201,12 +207,12 @@ if __name__ == '__main__':
 
             batch_dict_decoder = utils.get_next_batch(train_decoder, device)
 
-            loss, mse, likelihood = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
-                                                       kl_coef)
+            loss, mse, likelihood,forward_gt_mse,reverse_f_mse,reverse_gt_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
+                                                       reverse_f_lambda,reverse_gt_lambda)
 
             # saving results
             loss_list.append(loss), mse_list.append(mse), likelihood_list.append(
-                likelihood)
+                likelihood),forward_gt_mse_list.append(forward_gt_mse),reverse_f_mse_list.append(reverse_f_mse),reverse_gt_mse_list.append(reverse_gt_mse)
             # kl_first_p_list.append(kl_first_p), std_first_p_list.append(std_first_p)
 
             del batch_dict_encoder, batch_dict_graph, batch_dict_decoder
@@ -215,39 +221,46 @@ if __name__ == '__main__':
 
         scheduler.step()
 
-        message_train = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Loss {:.6f} | MSE {:.6F} | Likelihood {:.6f} | KL fp {:.4f} | FP STD {:.4f}|'.format(
+        message_train = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Loss {:.6f} | MSE {:.6F} | Likelihood {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
             epo,
             np.mean(loss_list), np.mean(mse_list), np.mean(likelihood_list),
-            np.mean(kl_first_p_list), np.mean(std_first_p_list))
+            np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list))
 
-        return message_train, kl_coef
+        return message_train
 
 
     for epo in range(1, args.niters + 1):
 
-        message_train, kl_coef = train_epoch(epo)
+        message_train = train_epoch(epo)
 
         if epo % n_iters_to_viz == 0:
             model.eval()
+
+            reverse_f_lambda = 0.5
+            # reverse_f_lambda = -0.151 * np.log(epo) + 0.9108
+            reverse_gt_lambda =0
+            # reverse_gt_lambda = -0.151 * np.log(epo) + 0.9108
+
             test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,
-                                                n_traj_samples=3, kl_coef=kl_coef)
+                                                n_traj_samples=3, reverse_f_lambda= reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
-            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Loss {:.6f} | MSE {:.6F} | Likelihood {:.6f} | KL fp {:.4f} | FP STD {:.4f}|'.format(
-                epo,
+            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | reverse_f_lambda {:.4f} | reverse_gt_lambda {:.4f} | Loss {:.6f} | MSE {:.6F} | Likelihood {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
+                epo,reverse_f_lambda,reverse_gt_lambda,
                 test_res["loss"], test_res["mse"], test_res["likelihood"],
-                test_res["kl_first_p"], test_res["std_first_p"])
+                test_res["forward_gt_mse"], test_res["reverse_f_mse"],test_res["reverse_gt_mse"])
 
             logger.info("Experiment " + str(experimentID))
             logger.info(message_train)
             logger.info(message_test)
-            # logger.info("KL coef: {}".format(kl_coef))
-            print("data: %s, encoder: %s, sample: %s, mode:%s" % (
-                args.data, args.z0_encoder, str(args.sample_percent_train), args.mode))
+            # logger.info(
+            # "KL coef: {}".format(kl_coef))
+            print("data: %s, encoder: %s, sample: %s, mode: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
+                args.data, args.z0_encoder, str(args.sample_percent_train), args.mode,reverse_f_lambda,reverse_gt_lambda))
 
-            if test_res["mse"] < best_test_mse:
-                best_test_mse = test_res["mse"]
-                message_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best mse {:.6f}|'.format(epo,
+            if test_res["forward_gt_mse"] < best_test_mse:
+                best_test_mse = test_res["forward_gt_mse"]
+                message_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}|'.format(epo,
                                                                                                         best_test_mse)
                 logger.info(message_best)
                 ckpt_path = os.path.join(args.save, "experiment_" + str(

@@ -173,14 +173,15 @@ def create_net(n_inputs, n_outputs, n_layers = 1,
 def compute_loss_all_batches(model,
 	encoder,graph,decoder,
 	n_batches, device,
-	n_traj_samples = 1, kl_coef = 1.):
+	n_traj_samples = 1, reverse_f_lambda = 1.,reverse_gt_lambda = 1.):
 
 	total = {}
 	total["loss"] = 0
 	total["likelihood"] = 0
 	total["mse"] = 0
-	total["kl_first_p"] = 0
-	total["std_first_p"] = 0
+	total["forward_gt_mse"] = 0
+	total["reverse_f_mse"] = 0
+	total["reverse_gt_mse"] = 0
 
 
 
@@ -195,7 +196,7 @@ def compute_loss_all_batches(model,
 			batch_dict_decoder = get_next_batch(decoder, device)
 
 			results = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
-											   n_traj_samples=n_traj_samples, kl_coef=kl_coef)
+											   n_traj_samples=n_traj_samples, reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
 			for key in total.keys():
 				if key in results:

@@ -33,7 +33,8 @@ class ParseData(object):
         self.batch_size = batch_size
         self.sample_percent = sample_percent
         if data_type == "train":
-            cut_num = 20000
+            cut_num = 5000
+            print("train_num: ",cut_num)
         else:
             cut_num = 5000
 

@@ -11,6 +11,7 @@ import lib.utils as utils
 from torch.distributions.normal import Normal
 from lib.create_latent_ode_model import create_LatentODE_model
 from lib.utils import compute_loss_all_batches
+from torch.utils.tensorboard import SummaryWriter
 
 # Generative model for noisy data based on ODE
 parser = argparse.ArgumentParser('Latent ODE')
@@ -31,7 +32,7 @@ parser.add_argument('--ode-dims', type=int, default=128, help="Dimensionality of
 parser.add_argument('--rec-layers', type=int, default=2, help="Number of layers in recognition model ")
 parser.add_argument('--n-heads', type=int, default=1, help="Number of heads in GTrans")
 parser.add_argument('--gen-layers', type=int, default=1, help="Number of layers  ODE func ")
-parser.add_argument('--extrap', type=str, default="False",
+parser.add_argument('--extrap', type=str, default="True",
                     help="Set extrapolation mode. If this flag is not set, run interpolation mode.")
 parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate (1 - keep probability).')
 parser.add_argument('--sample-percent-train', type=float, default=0.6, help='Percentage of training observtaion data')
@@ -69,7 +70,7 @@ elif args.data == "motion":
 if torch.cuda.is_available():
     print("Using GPU" + "-" * 80)
     device = torch.device("cuda:1")
-else:
+else:sh
     print("Using CPU" + "-" * 80)
     device = torch.device("cpu")
 
@@ -229,6 +230,8 @@ if __name__ == '__main__':
         return message_train
 
 
+    writer = SummaryWriter('/home/zijiehuang/wanjia/spring/extrap_experiment/extrap_tensorboard')
+
     for epo in range(1, args.niters + 1):
 
         message_train = train_epoch(epo)
@@ -237,12 +240,17 @@ if __name__ == '__main__':
             model.eval()
 
             # reverse_f_lambda = 0.5
-            if epo<15:
-                reverse_f_lambda = (-0.151 * np.log(epo) + 0.9108)*0.5
-                reverse_gt_lambda = (-0.151 * np.log(epo) + 0.9108) * 0.5
-            else:
-                reverse_f_lambda =0
-                reverse_gt_lambda = (-0.151 * np.log(epo) + 0.9108)
+            if 0<=epo<20:
+                reverse_f_lambda = 0
+                reverse_gt_lambda = 0
+            if 20<=epo<=40:
+                reverse_f_lambda=0.
+                # reverse_f_lambda = 0.1
+                reverse_gt_lambda = 0
+            if 41 <= epo < 101:
+                reverse_f_lambda =0.
+                # reverse_f_lambda =0.1
+                reverse_gt_lambda = 0
 
             test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,
@@ -258,8 +266,8 @@ if __name__ == '__main__':
             logger.info(message_test)
             # logger.info(
             # "KL coef: {}".format(kl_coef))
-            print("data: %s, encoder: %s, sample: %s, mode: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
-                args.data, args.z0_encoder, str(args.sample_percent_train), args.mode,reverse_f_lambda,reverse_gt_lambda))
+            print("data: %s, encoder: %s, train_sample: %s,test_sample: %s, mode: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
+                args.data, args.z0_encoder, str(args.sample_percent_train), str(args.sample_percent_test), args.mode,reverse_f_lambda,reverse_gt_lambda))
 
             if test_res["forward_gt_mse"] < best_test_mse:
                 best_test_mse = test_res["forward_gt_mse"]
@@ -275,7 +283,15 @@ if __name__ == '__main__':
                     'state_dict': model.state_dict(),
                 }, ckpt_path)
 
+            writer.add_scalar('MSE/forward_gt_mse', test_res["forward_gt_mse"], epo)
+            writer.add_scalar('MSE/reverse_f_mse', test_res["reverse_f_mse"], epo)
+            writer.add_scalar('MSE/reverse_gt_mse', test_res["reverse_gt_mse"], epo)
+            writer.add_scalar('Weight/FGT_RF', test_res["forward_gt_mse"] / test_res["reverse_f_mse"], epo)
+            writer.add_scalar('Weight/FGT_RGT', test_res["forward_gt_mse"] / test_res["reverse_gt_mse"], epo)
+
             torch.cuda.empty_cache()
+
+        writer.close()
 
 
 

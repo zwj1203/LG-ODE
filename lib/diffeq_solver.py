@@ -128,8 +128,13 @@ class DiffeqSolver(nn.Module):
         assert(pred_y_reverse.size()[0] == n_traj_samples)
         assert(pred_y_reverse.size()[1] == n_traj)
 
+
         if self.args.augment_dim > 0:
             pred_y_reverse = pred_y_reverse[:, :, :, :-self.args.augment_dim]
+
+        assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
+
+
         return pred_y, pred_y_reverse
 
         print("After return pred_y_reverse shape:", pred_y_reverse.shape)

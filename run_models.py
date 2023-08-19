@@ -17,7 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 parser = argparse.ArgumentParser('Latent ODE')
 parser.add_argument('--n-balls', type=int, default=5,
                     help='Number of objects in the dataset.')
-parser.add_argument('--niters', type=int, default=100)
+parser.add_argument('--niters', type=int, default=500)
 parser.add_argument('--lr', type=float, default=5e-4, help="Starting learning rate.")
 parser.add_argument('-b', '--batch-size', type=int, default=256)
 parser.add_argument('--save', type=str, default='experiments/', help="Path for save checkpoints")
@@ -244,12 +244,12 @@ if __name__ == '__main__':
                 reverse_f_lambda = 0
                 reverse_gt_lambda = 0
             if 20<=epo<=40:
-                reverse_f_lambda=0.5
-                reverse_gt_lambda = 0
+                reverse_f_lambda=0
+                reverse_gt_lambda = 0.5
             if 41 <= epo < 101:
-                reverse_f_lambda =0.5
+                reverse_f_lambda =0
 
-                reverse_gt_lambda = 0
+                reverse_gt_lambda = 0.5
 
             test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,

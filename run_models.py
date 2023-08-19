@@ -70,7 +70,7 @@ elif args.data == "motion":
 if torch.cuda.is_available():
     print("Using GPU" + "-" * 80)
     device = torch.device("cuda:1")
-else:sh
+else:
     print("Using CPU" + "-" * 80)
     device = torch.device("cpu")
 
@@ -244,12 +244,11 @@ if __name__ == '__main__':
                 reverse_f_lambda = 0
                 reverse_gt_lambda = 0
             if 20<=epo<=40:
-                reverse_f_lambda=0.
-                # reverse_f_lambda = 0.1
+                reverse_f_lambda=0.5
                 reverse_gt_lambda = 0
             if 41 <= epo < 101:
-                reverse_f_lambda =0.
-                # reverse_f_lambda =0.1
+                reverse_f_lambda =0.5
+
                 reverse_gt_lambda = 0
 
             test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,

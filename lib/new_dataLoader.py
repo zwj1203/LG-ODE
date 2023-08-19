@@ -29,14 +29,15 @@ class ParseData(object):
 
 
 
-    def load_data(self,sample_percent,batch_size,data_type="train"):
+    def load_data(self,sample_percent,batch_size,data_type="train",cut_num=5000):
         self.batch_size = batch_size
         self.sample_percent = sample_percent
         if data_type == "train":
-            cut_num = 5000
+            # cut_num = 5000
             print("train_num: ",cut_num)
         else:
-            cut_num = 5000
+            # cut_num = 5000
+            print("test_num: ",cut_num)
 
 
         # Loading Data

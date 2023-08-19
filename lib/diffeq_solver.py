@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchdiffeq import odeint_adjoint as odeint
 import numpy as np
 import lib.utils as utils
-
+import pdb
 
 class DiffeqSolver(nn.Module):
     def __init__(self, ode_func, reverse_ode_func, method,args,
@@ -51,8 +51,8 @@ class DiffeqSolver(nn.Module):
             ispadding = True
             time_steps_to_predict = torch.cat((torch.zeros(1,device=time_steps_to_predict.device),time_steps_to_predict))
         print('time_steps_to_predict shape', time_steps_to_predict.shape)
-
-        time_steps_to_predict_reverse = time_steps_to_predict.max() - time_steps_to_predict
+        # pdb.set_trace()
+        time_steps_to_predict_reverse = torch.flip(time_steps_to_predict.max() - time_steps_to_predict, dims=[0])
         print('time_steps_to_predict_reverse shape', time_steps_to_predict_reverse.shape)
 
         n_traj_samples, n_traj,feature = first_point.size()[0], first_point.size()[1],first_point.size()[2]
@@ -81,7 +81,7 @@ class DiffeqSolver(nn.Module):
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
         pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[0])
-
+        # pdb.set_trace()
 
 
         '''

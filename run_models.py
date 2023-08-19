@@ -48,22 +48,26 @@ parser.add_argument('--cutting_edge', type=bool, default=True, help='True/False'
 parser.add_argument('--extrap_num', type=int, default=40, help='extrap num ')
 parser.add_argument('--rec_attention', type=str, default="attention")
 parser.add_argument('--alias', type=str, default="run")
+parser.add_argument('--train_cut', type=int, default=20000, help='maximum number of train samples')
+parser.add_argument('--test_cut', type=int, default=5000, help='maximum number of test samples')
+parser.add_argument('--total_ode_step', type=int, default=60, help='total number of ode steps')
+parser.add_argument('--dataset', type=str, default='data/example_data', help='dataset directory')
 
 args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
 
 if args.data == "spring":
-    args.dataset = 'wanjia/LG-ODE/data/example_data'
+    # args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_springs5'
-    args.total_ode_step = 60
+    # args.total_ode_step = 60
 elif args.data == "charged":
-    args.dataset = 'wanjia/LG-ODE/data/example_data'
+    # args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_charged5'
-    args.total_ode_step = 60
+    # args.total_ode_step = 60
 elif args.data == "motion":
-    args.dataset = 'wanjia/LG-ODE/data/example_data'
+    # args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_motion'
-    args.total_ode_step = 49
+    # args.total_ode_step = 49
     args.n_balls = 31
 
 ############ CPU AND GPU related, Mode related, Dataset Related
@@ -102,9 +106,11 @@ if __name__ == '__main__':
     dataloader = ParseData(args.dataset, suffix=args.suffix, mode=args.mode, args=args)
     test_encoder, test_decoder, test_graph, test_batch = dataloader.load_data(sample_percent=args.sample_percent_test,
                                                                               batch_size=args.batch_size,
-                                                                              data_type="test")
+                                                                              data_type="test",
+                                                                              cut_num=args.test_cut)
     train_encoder, train_decoder, train_graph, train_batch = dataloader.load_data(
-        sample_percent=args.sample_percent_train, batch_size=args.batch_size, data_type="train")
+        sample_percent=args.sample_percent_train, batch_size=args.batch_size, data_type="train",
+        cut_num=args.train_cut)
 
     input_dim = dataloader.feature
 

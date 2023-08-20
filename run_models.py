@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser('Latent ODE')
 parser.add_argument('--n-balls', type=int, default=5,
                     help='Number of objects in the dataset.')
 parser.add_argument('--niters', type=int, default=500)
-parser.add_argument('--lr', type=float, default=5e-4, help="Starting learning rate.")
+parser.add_argument('--lr', type=float, default=1e-5, help="Starting learning rate.")
 parser.add_argument('-b', '--batch-size', type=int, default=256)
 parser.add_argument('--save', type=str, default='experiments/', help="Path for save checkpoints")
 parser.add_argument('--save-graph', type=str, default='plot/', help="Path for save checkpoints")
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
 
-    logname = 'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%f_reverse_gt_lambda_%f.log'%(
+    logname = 'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f.log'%(
                                         args.n_balls, args.niters, args.lr, args.total_ode_step,
                                         args.warmup_epoch, args.reverse_f_lambda,
                                         args.reverse_gt_lambda
@@ -254,16 +254,16 @@ if __name__ == '__main__':
         return message_train
 
 
-    writer = SummaryWriter(log_dir=os.path.join(args.tensorboard_dir, 
-                                                '%s_%s'%(args.data, task), 
-                                                'train_cut_%d'%args.train_cut,
-                                                'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
-                                                                                args.sample_percent_test)),
-                            filename_suffix='_n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%f_reverse_gt_lambda_%f'%(
-                                        args.n_balls, args.niters, args.lr, args.total_ode_step,
-                                        args.warmup_epoch, args.reverse_f_lambda,
-                                        args.reverse_gt_lambda
-                                    ))
+    writer = SummaryWriter(log_dir=os.path.join(
+        args.tensorboard_dir, 
+        '%s_%s'%(args.data, task), 
+        'train_cut_%d'%args.train_cut,
+        'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, args.sample_percent_test),
+        'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f'%(
+                                    args.n_balls, args.niters, args.lr, args.total_ode_step,
+                                    args.warmup_epoch, args.reverse_f_lambda,
+                                    args.reverse_gt_lambda)
+        ))
 
     for epo in range(1, args.niters + 1):
         if epo<=args.warmup_epoch:

@@ -52,8 +52,8 @@ parser.add_argument('--alias', type=str, default="run")
 parser.add_argument('--train_cut', type=int, default=20000, help='maximum number of train samples')
 parser.add_argument('--test_cut', type=int, default=5000, help='maximum number of test samples')
 parser.add_argument('--total_ode_step', type=int, default=60, help='total number of ode steps')
-parser.add_argument('--dataset', type=str, default='data/example_data', help='dataset directory')
-parser.add_argument('--tensorboard_dir', type=str, default='/home/zijiehuang/wanjia/spring/extrap_experiment/extrap_tensorboard', help='tensorboard root directory')
+parser.add_argument('--dataset', type=str, default='data', help='dataset directory')
+parser.add_argument('--tensorboard_dir', type=str, default='tensorboards', help='tensorboard root directory')
 parser.add_argument('--warmup_epoch', type=int, default=20, help='number of warmup epoch to train with forward mse only')
 parser.add_argument('--reverse_f_lambda', type=float, default=0, help='weight of reverse_f mse after warmup')
 parser.add_argument('--reverse_gt_lambda', type=float, default=0.5, help='weight of reverse_gt mse after warmup')
@@ -75,7 +75,7 @@ elif args.data == "motion":
     # args.total_ode_step = 49
     args.n_balls = 31
 
-task = 'extrapolation' if args.extrap else 'intrapolation'
+task = 'extrapolation' if args.extrap == 'True' else 'intrapolation'
 
 ############ CPU AND GPU related, Mode related, Dataset Related
 if torch.cuda.is_available():

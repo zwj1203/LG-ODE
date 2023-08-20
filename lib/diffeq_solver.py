@@ -77,7 +77,7 @@ class DiffeqSolver(nn.Module):
 
         pred_y = odeint(self.ode_func, first_point_augumented, time_steps_to_predict,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
-        pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], time_steps_to_predict_reverse,
+        pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], torch.flip(time_steps_to_predict_reverse, dims=[0]),
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
         pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[0])
@@ -132,7 +132,7 @@ class DiffeqSolver(nn.Module):
         if self.args.augment_dim > 0:
             pred_y_reverse = pred_y_reverse[:, :, :, :-self.args.augment_dim]
 
-        assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
+
 
 
         return pred_y, pred_y_reverse

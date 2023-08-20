@@ -9,7 +9,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--simulation', type=str, default='springs',
+parser.add_argument('--simulation', type=str, default='charged',
                     help='What simulation to generate.')
 parser.add_argument('--num-train', type=int, default=20000,
                     help='Number of training simulations to generate.')

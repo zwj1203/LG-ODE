@@ -259,8 +259,7 @@ if __name__ == '__main__':
                                                 'train_cut_%d'%args.train_cut,
                                                 'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
                                                                                 args.sample_percent_test)),
-                            filename_suffix='_n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d\
-                                    _reverse_f_lambda_%f_reverse_gt_lambda_%f'%(
+                            filename_suffix='_n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%f_reverse_gt_lambda_%f'%(
                                         args.n_balls, args.niters, args.lr, args.total_ode_step,
                                         args.warmup_epoch, args.reverse_f_lambda,
                                         args.reverse_gt_lambda

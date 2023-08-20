@@ -75,6 +75,8 @@ elif args.data == "motion":
     # args.total_ode_step = 49
     args.n_balls = 31
 
+task = 'extrapolation' if args.extrap else 'intrapolation'
+
 ############ CPU AND GPU related, Mode related, Dataset Related
 if torch.cuda.is_available():
     print("Using GPU" + "-" * 80)
@@ -145,8 +147,9 @@ if __name__ == '__main__':
     ##################################################################
     # Training
 
-    log_dir = os.path.join("logs/", 'train_cut_%d'%args.train_cut,
-                        'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
+    log_dir = os.path.join("logs/", '%s_%s'%(args.data, task), 
+                           'train_cut_%d'%args.train_cut,
+                           'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
                                                         args.sample_percent_test))
     # args.alias + "_" + args.z0_encoder + "_" + args.data + "_" + str(
     #     args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
@@ -252,6 +255,7 @@ if __name__ == '__main__':
 
 
     writer = SummaryWriter(log_dir=os.path.join(args.tensorboard_dir, 
+                                                '%s_%s'%(args.data, task), 
                                                 'train_cut_%d'%args.train_cut,
                                                 'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
                                                                                 args.sample_percent_test)),

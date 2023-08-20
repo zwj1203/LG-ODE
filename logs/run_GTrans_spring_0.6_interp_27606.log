@@ -1,4 +1,0 @@
-/Users/zwj/Desktop/Code/LG-ODE/run_models.py
-/Users/zwj/Desktop/Code/LG-ODE/run_models.py
-Namespace(alias='run', augment_dim=64, batch_size=256, clip=10, cutting_edge=True, data='spring', dataset='data/example_data', dropout=0.2, edge_types=2, extrap='False', extrap_num=40, gen_layers=1, l2=0.001, latents=16, load=None, lr=0.0005, mode='interp', n_balls=5, n_heads=1, niters=50, ode_dims=128, odenet='NRI', optimizer='AdamW', random_seed=1991, rec_attention='attention', rec_dims=64, rec_layers=2, sample_percent_test=0.6, sample_percent_train=0.6, save='experiments/', save_graph='plot/', solver='rk4', suffix='_springs5', total_ode_step=60, z0_encoder='GTrans')
-run

@@ -12,6 +12,7 @@ from torch.distributions.normal import Normal
 from lib.create_latent_ode_model import create_LatentODE_model
 from lib.utils import compute_loss_all_batches
 from torch.utils.tensorboard import SummaryWriter
+from pathlib import Path
 
 # Generative model for noisy data based on ODE
 parser = argparse.ArgumentParser('Latent ODE')
@@ -52,6 +53,10 @@ parser.add_argument('--train_cut', type=int, default=20000, help='maximum number
 parser.add_argument('--test_cut', type=int, default=5000, help='maximum number of test samples')
 parser.add_argument('--total_ode_step', type=int, default=60, help='total number of ode steps')
 parser.add_argument('--dataset', type=str, default='data/example_data', help='dataset directory')
+parser.add_argument('--tensorboard_dir', type=str, default='/home/zijiehuang/wanjia/spring/extrap_experiment/extrap_tensorboard', help='tensorboard root directory')
+parser.add_argument('--warmup_epoch', type=int, default=20, help='number of warmup epoch to train with forward mse only')
+parser.add_argument('--reverse_f_lambda', type=float, default=0, help='weight of reverse_f mse after warmup')
+parser.add_argument('--reverse_gt_lambda', type=float, default=0.5, help='weight of reverse_gt mse after warmup')
 
 args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
@@ -140,11 +145,21 @@ if __name__ == '__main__':
     ##################################################################
     # Training
 
-    log_path = "logs/" + args.alias + "_" + args.z0_encoder + "_" + args.data + "_" + str(
-        args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
-    if not os.path.exists("logs/"):
-        utils.makedirs("logs/")
-    logger = utils.get_logger(logpath=log_path, filepath=os.path.abspath(__file__))
+    log_dir = os.path.join("logs/", 'train_cut_%d'%args.train_cut,
+                        'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
+                                                        args.sample_percent_test))
+    # args.alias + "_" + args.z0_encoder + "_" + args.data + "_" + str(
+    #     args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+
+
+    logname = 'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d\
+                                    _reverse_f_lambda_%f_reverse_gt_lambda_%f.log'%(
+                                        args.n_balls, args.niters, args.lr, args.total_ode_step,
+                                        args.warmup_epoch, args.reverse_f_lambda,
+                                        args.reverse_gt_lambda
+                                    )
+    logger = utils.get_logger(logpath=os.path.join(log_dir,logname), filepath=os.path.abspath(__file__))
     logger.info(input_command)
     logger.info(str(args))
     logger.info(args.alias)
@@ -161,9 +176,9 @@ if __name__ == '__main__':
     best_test_mse = np.inf
     n_iters_to_viz = 1
 
-    #weight of reverse:
-    reverse_f_lambda=1
-    reverse_gt_lambda=1
+    # #weight of reverse:
+    # reverse_f_lambda=None
+    # reverse_gt_lambda=None
 
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,reverse_f_lambda,reverse_gt_lambda):
 
@@ -236,26 +251,34 @@ if __name__ == '__main__':
         return message_train
 
 
-    writer = SummaryWriter('/home/zijiehuang/wanjia/spring/extrap_experiment/extrap_tensorboard')
+    writer = SummaryWriter(log_dir=os.path.join(args.tensorboard_dir, 
+                                                'train_cut_%d'%args.train_cut,
+                                                'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
+                                                                                args.sample_percent_test)),
+                            filename_suffix='_n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d\
+                                    _reverse_f_lambda_%f_reverse_gt_lambda_%f'%(
+                                        args.n_balls, args.niters, args.lr, args.total_ode_step,
+                                        args.warmup_epoch, args.reverse_f_lambda,
+                                        args.reverse_gt_lambda
+                                    ))
 
     for epo in range(1, args.niters + 1):
-
+        if epo<=args.warmup_epoch:
+            reverse_f_lambda = 0
+            reverse_gt_lambda = 0
+        else:
+            reverse_f_lambda = args.reverse_f_lambda
+            reverse_gt_lambda = args.reverse_gt_lambda
         message_train = train_epoch(epo)
 
         if epo % n_iters_to_viz == 0:
             model.eval()
 
             # reverse_f_lambda = 0.5
-            if 0<=epo<20:
-                reverse_f_lambda = 0
-                reverse_gt_lambda = 0
-            if 20<=epo<=40:
-                reverse_f_lambda=0
-                reverse_gt_lambda = 0.5
-            if 41 <= epo < 101:
-                reverse_f_lambda =0
+            # if 41 <= epo < 101:
+            #     reverse_f_lambda =0
 
-                reverse_gt_lambda = 0.5
+            #     reverse_gt_lambda = 0.5
 
             test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,

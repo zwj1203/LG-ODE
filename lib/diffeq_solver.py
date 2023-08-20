@@ -50,10 +50,11 @@ class DiffeqSolver(nn.Module):
         if time_steps_to_predict[0] != 0:
             ispadding = True
             time_steps_to_predict = torch.cat((torch.zeros(1,device=time_steps_to_predict.device),time_steps_to_predict))
-        print('time_steps_to_predict shape', time_steps_to_predict.shape)
+        # print('time_steps_to_predict shape', time_steps_to_predict.shape)
         # pdb.set_trace()
         time_steps_to_predict_reverse = torch.flip(time_steps_to_predict.max() - time_steps_to_predict, dims=[0])
-        print('time_steps_to_predict_reverse shape', time_steps_to_predict_reverse.shape)
+        # time_steps_to_predict_reverse = time_steps_to_predict.max() - time_steps_to_predict
+        # print('time_steps_to_predict_reverse shape', time_steps_to_predict_reverse.shape)
 
         n_traj_samples, n_traj,feature = first_point.size()[0], first_point.size()[1],first_point.size()[2]
 
@@ -77,31 +78,31 @@ class DiffeqSolver(nn.Module):
 
         pred_y = odeint(self.ode_func, first_point_augumented, time_steps_to_predict,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
-        pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], torch.flip(time_steps_to_predict_reverse, dims=[0]),
+        pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], time_steps_to_predict_reverse,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
         pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[0])
         # pdb.set_trace()
-
+        assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
 
         '''
         pred_y = self.ode_func(time_steps_to_predict, first_point_augumented)
         pred_y = pred_y.repeat(time_steps_to_predict.shape[0], 1, 1,1)
         '''
-        print('pred_y_reverse size', pred_y_reverse.size())
-        print('first_point size(): n_traj_samples, n_traj, feature',first_point.size())
-        print("pred_y_reverse 0 size:", pred_y_reverse[0].size())
+        # print('pred_y_reverse size', pred_y_reverse.size())
+        # print('first_point size(): n_traj_samples, n_traj, feature',first_point.size())
+        # print("pred_y_reverse 0 size:", pred_y_reverse[0].size())
 
-        print('pred_y_reverse_flipped',pred_y_reverse_flipped)
-        print("pred_y_reverse_flipped 0:", pred_y_reverse_flipped[0])
-        print('pred_y Final',pred_y[-1])
+        # print('pred_y_reverse_flipped',pred_y_reverse_flipped)
+        # print("pred_y_reverse_flipped 0:", pred_y_reverse_flipped[0])
+        # print('pred_y Final',pred_y[-1])
         # print('pred_y_reverse Final',pred_y_reverse[-1])
         # print('pred_y_reverse 0', pred_y_reverse[0])
 
         if ispadding:
             pred_y = pred_y[1:,:,:,:]
             time_steps_to_predict = time_steps_to_predict[1:]
-
+            # pdb.set_trace()
         pred_y = pred_y.view(time_steps_to_predict.size(0), -1, pred_y.size(3)) #[t,n_sample*b*n_ball, d]
 
         pred_y = pred_y.permute(1,0,2) #[n_sample*b*n_ball, time_length, d]
@@ -132,7 +133,7 @@ class DiffeqSolver(nn.Module):
         if self.args.augment_dim > 0:
             pred_y_reverse = pred_y_reverse[:, :, :, :-self.args.augment_dim]
 
-
+        # assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
 
 
         return pred_y, pred_y_reverse

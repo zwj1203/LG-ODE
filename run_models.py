@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser('Latent ODE')
 parser.add_argument('--n-balls', type=int, default=5,
                     help='Number of objects in the dataset.')
 parser.add_argument('--niters', type=int, default=500)
-parser.add_argument('--lr', type=float, default=5e-4, help="Starting learning rate.")
+parser.add_argument('--lr', type=float, default=1e-5, help="Starting learning rate.")
 parser.add_argument('-b', '--batch-size', type=int, default=256)
 parser.add_argument('--save', type=str, default='experiments/', help="Path for save checkpoints")
 parser.add_argument('--save-graph', type=str, default='plot/', help="Path for save checkpoints")
@@ -57,6 +57,7 @@ parser.add_argument('--tensorboard_dir', type=str, default='tensorboards', help=
 parser.add_argument('--warmup_epoch', type=int, default=20, help='number of warmup epoch to train with forward mse only')
 parser.add_argument('--reverse_f_lambda', type=float, default=0, help='weight of reverse_f mse after warmup')
 parser.add_argument('--reverse_gt_lambda', type=float, default=0.5, help='weight of reverse_gt mse after warmup')
+parser.add_argument('--device', type=int, default=0, help='running device')
 
 args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
@@ -80,7 +81,7 @@ task = 'extrapolation' if args.extrap == 'True' else 'intrapolation'
 ############ CPU AND GPU related, Mode related, Dataset Related
 if torch.cuda.is_available():
     print("Using GPU" + "-" * 80)
-    device = torch.device("cuda:1")
+    device = torch.device("cuda:%d"%args.device)
 else:
     print("Using CPU" + "-" * 80)
     device = torch.device("cpu")
@@ -156,8 +157,7 @@ if __name__ == '__main__':
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
 
-    logname = 'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d\
-                                    _reverse_f_lambda_%f_reverse_gt_lambda_%f.log'%(
+    logname = 'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f.log'%(
                                         args.n_balls, args.niters, args.lr, args.total_ode_step,
                                         args.warmup_epoch, args.reverse_f_lambda,
                                         args.reverse_gt_lambda
@@ -254,17 +254,16 @@ if __name__ == '__main__':
         return message_train
 
 
-    writer = SummaryWriter(log_dir=os.path.join(args.tensorboard_dir, 
-                                                '%s_%s'%(args.data, task), 
-                                                'train_cut_%d'%args.train_cut,
-                                                'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
-                                                                                args.sample_percent_test)),
-                            filename_suffix='_n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d\
-                                    _reverse_f_lambda_%f_reverse_gt_lambda_%f'%(
-                                        args.n_balls, args.niters, args.lr, args.total_ode_step,
-                                        args.warmup_epoch, args.reverse_f_lambda,
-                                        args.reverse_gt_lambda
-                                    ))
+    writer = SummaryWriter(log_dir=os.path.join(
+        args.tensorboard_dir, 
+        '%s_%s'%(args.data, task), 
+        'train_cut_%d'%args.train_cut,
+        'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, args.sample_percent_test),
+        'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f'%(
+                                    args.n_balls, args.niters, args.lr, args.total_ode_step,
+                                    args.warmup_epoch, args.reverse_f_lambda,
+                                    args.reverse_gt_lambda)
+        ))
 
     for epo in range(1, args.niters + 1):
         if epo<=args.warmup_epoch:

@@ -49,14 +49,14 @@ parser.add_argument('--cutting_edge', type=bool, default=True, help='True/False'
 parser.add_argument('--extrap_num', type=int, default=40, help='extrap num ')
 parser.add_argument('--rec_attention', type=str, default="attention")
 parser.add_argument('--alias', type=str, default="run")
-parser.add_argument('--train_cut', type=int, default=20000, help='maximum number of train samples')
-parser.add_argument('--test_cut', type=int, default=5000, help='maximum number of test samples')
+parser.add_argument('--train_cut', type=int, default=2000, help='maximum number of train samples')
+parser.add_argument('--test_cut', type=int, default=500, help='maximum number of test samples')
 parser.add_argument('--total_ode_step', type=int, default=60, help='total number of ode steps')
 parser.add_argument('--dataset', type=str, default='data', help='dataset directory')
 parser.add_argument('--tensorboard_dir', type=str, default='tensorboards', help='tensorboard root directory')
 parser.add_argument('--warmup_epoch', type=int, default=20, help='number of warmup epoch to train with forward mse only')
 parser.add_argument('--reverse_f_lambda', type=float, default=0, help='weight of reverse_f mse after warmup')
-parser.add_argument('--reverse_gt_lambda', type=float, default=0.5, help='weight of reverse_gt mse after warmup')
+parser.add_argument('--reverse_gt_lambda', type=float, default=0, help='weight of reverse_gt mse after warmup')
 parser.add_argument('--device', type=int, default=0, help='running device')
 
 args = parser.parse_args()
@@ -148,19 +148,18 @@ if __name__ == '__main__':
     ##################################################################
     # Training
 
-    log_dir = os.path.join("logs/", '%s_%s'%(args.data, task), 
-                           'train_cut_%d'%args.train_cut,
-                           'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, 
-                                                        args.sample_percent_test))
-    # args.alias + "_" + args.z0_encoder + "_" + args.data + "_" + str(
+    # log_dir = os.path.join("./home/zijiehuang/LGODE_logs/", '%s_%s'%(args.data, task))
+    log_dir = os.path.join("/home/zijiehuang", "PIGODE_logs", '%s_%s' % (args.data, task))
+
+    # args.alias + "_" + args.z0_encode./home/zijiehuang/LGODE_logsr + "_" + args.data + "_" + str(
     #     args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
 
-    logname = 'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f.log'%(
+    logname = 'n-balls%d_niters%d_lr%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log'%(
                                         args.n_balls, args.niters, args.lr, args.total_ode_step,
                                         args.warmup_epoch, args.reverse_f_lambda,
-                                        args.reverse_gt_lambda
+                                        args.reverse_gt_lambda,args.train_cut,args.test_cut,args.sample_percent_train,args.sample_percent_train
                                     )
     logger = utils.get_logger(logpath=os.path.join(log_dir,logname), filepath=os.path.abspath(__file__))
     logger.info(input_command)
@@ -183,6 +182,16 @@ if __name__ == '__main__':
     # reverse_f_lambda=None
     # reverse_gt_lambda=None
 
+    writer = SummaryWriter(log_dir=os.path.join(
+        args.tensorboard_dir,
+        '%s_%s' % (args.data, task),
+        'train_cut_%d' % args.train_cut,
+        'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+        'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f' % (
+            args.n_balls, args.niters, args.lr, args.total_ode_step,
+            args.warmup_epoch, args.reverse_f_lambda,
+            args.reverse_gt_lambda)
+    ))
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,reverse_f_lambda,reverse_gt_lambda):
 
         optimizer.zero_grad()
@@ -251,19 +260,15 @@ if __name__ == '__main__':
             np.mean(loss_list), np.mean(mse_list), np.mean(likelihood_list),
             np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list))
 
+        writer.add_scalar('train_MSE/train_forward_gt_mse', np.mean(forward_gt_mse_list), epo)
+        writer.add_scalar('train_MSE/train_reverse_f_mse', np.mean(reverse_f_mse_list), epo)
+        writer.add_scalar('train_MSE/train_reverse_gt_mse', np.mean(reverse_gt_mse_list), epo)
+
+
         return message_train
 
 
-    writer = SummaryWriter(log_dir=os.path.join(
-        args.tensorboard_dir, 
-        '%s_%s'%(args.data, task), 
-        'train_cut_%d'%args.train_cut,
-        'observe_ratio_train%.2f_test%.2f'%(args.sample_percent_train, args.sample_percent_test),
-        'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f'%(
-                                    args.n_balls, args.niters, args.lr, args.total_ode_step,
-                                    args.warmup_epoch, args.reverse_f_lambda,
-                                    args.reverse_gt_lambda)
-        ))
+
 
     for epo in range(1, args.niters + 1):
         if epo<=args.warmup_epoch:
@@ -314,9 +319,10 @@ if __name__ == '__main__':
                     'state_dict': model.state_dict(),
                 }, ckpt_path)
 
-            writer.add_scalar('MSE/forward_gt_mse', test_res["forward_gt_mse"], epo)
-            writer.add_scalar('MSE/reverse_f_mse', test_res["reverse_f_mse"], epo)
-            writer.add_scalar('MSE/reverse_gt_mse', test_res["reverse_gt_mse"], epo)
+            writer.add_scalar('test_MSE/test_forward_gt_mse', test_res["forward_gt_mse"], epo)
+            writer.add_scalar('test_MSE/test_reverse_f_mse', test_res["reverse_f_mse"], epo)
+            writer.add_scalar('test_MSE/test_reverse_gt_mse', test_res["reverse_gt_mse"], epo)
+
             writer.add_scalar('Weight/FGT_RF', test_res["forward_gt_mse"] / test_res["reverse_f_mse"], epo)
             writer.add_scalar('Weight/FGT_RGT', test_res["forward_gt_mse"] / test_res["reverse_gt_mse"], epo)
 

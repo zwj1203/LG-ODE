@@ -5,14 +5,14 @@ epoch=300
 batch_size=256
 
 lr='5e-4'
-train_observe_ratio=0.6
-reverse_gt_lambda=0
+train_observe_ratio=0.5
+reverse_gt_lambda=0.5
 reverse_f_lambda=0.5
 test_cut='500'
 
 # LP args
 train_cut=('2000' '1600' '1200' '800' '500')
-test_observe_ratio=(0.6)
+test_observe_ratio=(0.5)
 
 
 for t in "${train_cut[@]}"

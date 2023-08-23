@@ -260,12 +260,9 @@ if __name__ == '__main__':
             np.mean(loss_list), np.mean(mse_list), np.mean(likelihood_list),
             np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list))
 
-        writer.add_scalar('train_MSE/train_forward_gt_mse', np.mean(forward_gt_mse_list), epo)
-        writer.add_scalar('train_MSE/train_reverse_f_mse', np.mean(reverse_f_mse_list), epo)
-        writer.add_scalar('train_MSE/train_reverse_gt_mse', np.mean(reverse_gt_mse_list), epo)
 
 
-        return message_train
+        return message_train ,np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list)
 
 
 
@@ -277,7 +274,7 @@ if __name__ == '__main__':
         else:
             reverse_f_lambda = args.reverse_f_lambda
             reverse_gt_lambda = args.reverse_gt_lambda
-        message_train = train_epoch(epo)
+        message_train,train_forward_gt_mse,train_reverse_f_mse,train_reverse_gt_mse = train_epoch(epo)
 
         if epo % n_iters_to_viz == 0:
             model.eval()
@@ -319,16 +316,22 @@ if __name__ == '__main__':
                     'state_dict': model.state_dict(),
                 }, ckpt_path)
 
+
+            writer.add_scalar('train_MSE/train_forward_gt_mse', train_forward_gt_mse, epo)
+            writer.add_scalar('train_MSE/train_reverse_f_mse', train_reverse_f_mse,epo)
+            writer.add_scalar('train_MSE/train_reverse_gt_mse', train_reverse_gt_mse, epo)
+
             writer.add_scalar('test_MSE/test_forward_gt_mse', test_res["forward_gt_mse"], epo)
             writer.add_scalar('test_MSE/test_reverse_f_mse', test_res["reverse_f_mse"], epo)
             writer.add_scalar('test_MSE/test_reverse_gt_mse', test_res["reverse_gt_mse"], epo)
+
 
             writer.add_scalar('Weight/FGT_RF', test_res["forward_gt_mse"] / test_res["reverse_f_mse"], epo)
             writer.add_scalar('Weight/FGT_RGT', test_res["forward_gt_mse"] / test_res["reverse_gt_mse"], epo)
 
             torch.cuda.empty_cache()
 
-        writer.close()
+    writer.close()
 
 
 

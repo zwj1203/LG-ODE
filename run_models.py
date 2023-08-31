@@ -58,6 +58,11 @@ parser.add_argument('--warmup_epoch', type=int, default=20, help='number of warm
 parser.add_argument('--reverse_f_lambda', type=float, default=0, help='weight of reverse_f mse after warmup')
 parser.add_argument('--reverse_gt_lambda', type=float, default=0, help='weight of reverse_gt mse after warmup')
 parser.add_argument('--device', type=int, default=0, help='running device')
+parser.add_argument('--Tmax', type=float, default=2000, help='optimazor')
+parser.add_argument('--eta_min', type=float, default=0, help='optimazor')
+
+
+
 
 args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
@@ -156,8 +161,8 @@ if __name__ == '__main__':
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
 
-    logname = 'n-balls%d_niters%d_lr%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log'%(
-                                        args.n_balls, args.niters, args.lr, args.total_ode_step,
+    logname = 'n-balls%d_niters%d_lr%f-%d-%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log'%(
+                                        args.n_balls, args.niters, args.lr, args.Tmax, args.eta_min, args.total_ode_step,
                                         args.warmup_epoch, args.reverse_f_lambda,
                                         args.reverse_gt_lambda,args.train_cut,args.test_cut,args.sample_percent_train,args.sample_percent_train
                                     )
@@ -167,15 +172,19 @@ if __name__ == '__main__':
     logger.info(args.alias)
 
     # Optimizer
+
     if args.optimizer == "AdamW":
         optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.l2)
     elif args.optimizer == "Adam":
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 1000, eta_min=1e-9)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.Tmax, args.eta_min)
+
 
     wait_until_kl_inc = 10
     best_test_mse = np.inf
+    best_train_mse = np.inf
+
     n_iters_to_viz = 1
 
     # #weight of reverse:
@@ -255,9 +264,9 @@ if __name__ == '__main__':
 
         scheduler.step()
 
-        message_train = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Loss {:.6f} | MSE {:.6F} | Likelihood {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
+        message_train = 'Epoch {:04d} | [Train seq (cond on sampled tp)] | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
             epo,
-            np.mean(loss_list), np.mean(mse_list), np.mean(likelihood_list),
+            np.mean(loss_list),
             np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list))
 
 
@@ -289,9 +298,9 @@ if __name__ == '__main__':
                                                 n_batches=test_batch, device=device,
                                                 n_traj_samples=3, reverse_f_lambda= reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
-            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | reverse_f_lambda {:.4f} | reverse_gt_lambda {:.4f} | Loss {:.6f} | MSE {:.6F} | Likelihood {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
+            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
                 epo,reverse_f_lambda,reverse_gt_lambda,
-                test_res["loss"], test_res["mse"], test_res["likelihood"],
+                test_res["loss"],
                 test_res["forward_gt_mse"], test_res["reverse_f_mse"],test_res["reverse_gt_mse"])
 
             logger.info("Experiment " + str(experimentID))
@@ -299,14 +308,21 @@ if __name__ == '__main__':
             logger.info(message_test)
             # logger.info(
             # "KL coef: {}".format(kl_coef))
-            print("data: %s, encoder: %s, train_sample: %s,test_sample: %s, mode: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
-                args.data, args.z0_encoder, str(args.sample_percent_train), str(args.sample_percent_test), args.mode,reverse_f_lambda,reverse_gt_lambda))
+            print("data: %s, encoder: %s, lr: %s, epoch: %s, train_sample: %s,test_sample: %s, mode: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
+                args.data, args.z0_encoder, str(args.lr), str(args.niters), str(args.sample_percent_train), str(args.sample_percent_test), args.mode,reverse_f_lambda,reverse_gt_lambda))
 
             if test_res["forward_gt_mse"] < best_test_mse:
                 best_test_mse = test_res["forward_gt_mse"]
-                message_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}|'.format(epo,
+                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}|'.format(epo,
                                                                                                         best_test_mse)
-                logger.info(message_best)
+                logger.info(message_test_best)
+
+            if train_forward_gt_mse < best_train_mse:
+                best_train_mse = train_forward_gt_mse
+                message_train_best = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Best forward gt  mse {:.6f}|'.format(
+                    epo,best_train_mse)
+                logger.info(message_train_best)
+
                 ckpt_path = os.path.join(args.save, "experiment_" + str(
                     experimentID) + "_" + args.z0_encoder + "_" + args.data + "_" + str(
                     args.sample_percent_train) + "_" + args.mode + "_epoch_" + str(epo) + "_mse_" + str(
@@ -326,8 +342,8 @@ if __name__ == '__main__':
             writer.add_scalar('test_MSE/test_reverse_gt_mse', test_res["reverse_gt_mse"], epo)
 
 
-            writer.add_scalar('Weight/FGT_RF', test_res["forward_gt_mse"] / test_res["reverse_f_mse"], epo)
-            writer.add_scalar('Weight/FGT_RGT', test_res["forward_gt_mse"] / test_res["reverse_gt_mse"], epo)
+            # writer.add_scalar('Weight/FGT_RF', test_res["forward_gt_mse"] / test_res["reverse_f_mse"], epo)
+            # writer.add_scalar('Weight/FGT_RGT', test_res["forward_gt_mse"] / test_res["reverse_gt_mse"], epo)
 
             torch.cuda.empty_cache()
 

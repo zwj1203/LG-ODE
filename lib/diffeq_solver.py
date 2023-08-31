@@ -46,11 +46,12 @@ class DiffeqSolver(nn.Module):
         :return:
         '''
         #whether to padding 0 to the time series
+        # print('time_steps_to_predict shape',time_steps_to_predict.size())
         ispadding = False
         if time_steps_to_predict[0] != 0:
             ispadding = True
             time_steps_to_predict = torch.cat((torch.zeros(1,device=time_steps_to_predict.device),time_steps_to_predict))
-        # print('time_steps_to_predict shape', time_steps_to_predict.shape)
+        # print('time_steps_to_predict shape after padding', time_steps_to_predict.size())
         # pdb.set_trace()
         time_steps_to_predict_reverse = torch.flip(time_steps_to_predict.max() - time_steps_to_predict, dims=[0])
         # time_steps_to_predict_reverse = time_steps_to_predict.max() - time_steps_to_predict

@@ -68,6 +68,7 @@ class VAE_Baseline(nn.Module):
     def get_f_r_mse(self, pred_y,pred_y_reverse, mask=None):
         # pred_y_reverse shape [n_traj_samples, n_traj, n_tp, n_dim]
         # pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
+
         mask = mask.repeat(pred_y.size(0), 1, 1, 1)
         # Compute likelihood of the data under the predictions
         log_density_data = compute_mse(pred_y_reverse, pred_y, mask=mask)

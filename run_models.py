@@ -60,6 +60,9 @@ parser.add_argument('--reverse_gt_lambda', type=float, default=0, help='weight o
 parser.add_argument('--device', type=int, default=0, help='running device')
 parser.add_argument('--Tmax', type=float, default=2000, help='optimazor')
 parser.add_argument('--eta_min', type=float, default=0, help='optimazor')
+parser.add_argument('--visdata_dir', type=str, default='visdata', help='vis root directory')
+
+
 
 
 
@@ -204,7 +207,7 @@ if __name__ == '__main__':
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,reverse_f_lambda,reverse_gt_lambda):
 
         optimizer.zero_grad()
-        train_res = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
+        train_res,_,_,_ = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
                                              n_traj_samples=3, reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
         loss = train_res["loss"]
@@ -294,7 +297,7 @@ if __name__ == '__main__':
 
             #     reverse_gt_lambda = 0.5
 
-            test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
+            test_res,gt,f, r = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,
                                                 n_traj_samples=3, reverse_f_lambda= reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
@@ -313,13 +316,48 @@ if __name__ == '__main__':
 
             if test_res["forward_gt_mse"] < best_test_mse:
                 best_test_mse = test_res["forward_gt_mse"]
-                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}|'.format(epo,
+                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}'.format(epo,
                                                                                                         best_test_mse)
+                groundtruth_dir = os.path.join(
+                    args.visdata_dir,
+                    '%s_%s' % (args.data, task),
+                    'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+                    'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
+                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda)
+                )
+
+                forward_dir = os.path.join(
+                    args.visdata_dir,
+                    '%s_%s' % (args.data, task),
+                    'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+                    'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
+                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda)
+                )
+
+                reverse_dir = os.path.join(
+                    args.visdata_dir,
+                    '%s_%s' % (args.data, task),
+                    'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+                    'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
+                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda)
+                )
+
+                # Create directories
+                Path(groundtruth_dir).mkdir(parents=True, exist_ok=True)
+                Path(forward_dir).mkdir(parents=True, exist_ok=True)
+                Path(reverse_dir).mkdir(parents=True, exist_ok=True)
+
+                # Save files
+                np.save(os.path.join(groundtruth_dir, 'groundtruth_trajectory.npy'), gt.cpu().detach().numpy())
+                np.save(os.path.join(forward_dir, 'forward_trajectory.npy'), f.cpu().detach().numpy())
+                np.save(os.path.join(reverse_dir, 'reverse_trajectory.npy'), r.cpu().detach().numpy())
+
+
                 logger.info(message_test_best)
 
             if train_forward_gt_mse < best_train_mse:
                 best_train_mse = train_forward_gt_mse
-                message_train_best = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Best forward gt  mse {:.6f}|'.format(
+                message_train_best = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Best forward gt  mse {:.6f}'.format(
                     epo,best_train_mse)
                 logger.info(message_train_best)
 

@@ -3,6 +3,7 @@ from torch.distributions.normal import Normal
 from torch.distributions import kl_divergence
 import torch.nn as nn
 import torch
+import numpy as np
 
 
 class VAE_Baseline(nn.Module):
@@ -107,6 +108,9 @@ class VAE_Baseline(nn.Module):
         # kldiv_z0 = torch.mean(kldiv_z0,(1,2))
 
         # Compute likelihood of all the points
+
+
+
         Forward_gt_rec_likelihood = self.get_gaussian_likelihood(
             batch_dict_decoder["data"], pred_y, temporal_weights,
             mask=batch_dict_decoder["mask"])  # negative value
@@ -125,11 +129,11 @@ class VAE_Baseline(nn.Module):
             mask=batch_dict_decoder["mask"])  # [1]
 
         Reverse_f_rec_likelihood = self.get_f_r_gaussian_likelihood(
-            batch_dict_decoder["data"], pred_y_reverse, temporal_weights,
+            pred_y, pred_y_reverse, temporal_weights,
             mask=batch_dict_decoder["mask"])  # negative value
 
         Reverse_f_mse = self.get_f_r_mse(
-            batch_dict_decoder["data"], pred_y_reverse,
+            pred_y, pred_y_reverse,
             mask=batch_dict_decoder["mask"])  # [1]
         # loss
 
@@ -145,9 +149,9 @@ class VAE_Baseline(nn.Module):
         results["reverse_f_mse"] = torch.mean(Reverse_f_mse).data.item()
         results["reverse_gt_mse"] = torch.mean(Reverse_gt_mse).data.item()
         # results["kl_first_p"] =  torch.mean(kldiv_z0).detach().data.item()
-        # results["std_first_p"] = torch.mean(fp_std).detach().data.item() .
+        # results["std_first_p"] = torch.mean(fp_std).detach().data.item()
 
-        return results
+        return results, batch_dict_decoder["data"], pred_y, pred_y_reverse,
 
 
 

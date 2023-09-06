@@ -1,23 +1,30 @@
 #!/bin/bash
-device=4
+device=0
 
 epoch=2000
 batch_size=512
 
+#lr
 lr='1e-4'
-train_observe_ratio=0.6
-reverse_gt_lambda=0
-reverse_f_lambda=0.5
-test_cut='400'
-data='charged'  #help="spring,charged,motion"
 Tmax=2000
 eta_min=1e-6
 
+#observe ratio
+train_observe_ratio=0.4
+test_observe_ratio=0.4
 
+#reverse_lambda
+reverse_gt_lambda=0.5
+reverse_f_lambda=0
+
+data='spring'  #help="spring,charged,motion"
+test_cut='400'
 
 # LP args
-train_cut=('2000' '1500' '1000' '750' '600' '300' '100'  )
-test_observe_ratio=0.6
+#train_cut=('2000' '1500' '1000' '750' '600' '300' '100'  )
+train_cut=('1000' '750' '600' '300' '100' '1500' )
+
+#train_cut=('10'  )
 
 
 for t in "${train_cut[@]}"

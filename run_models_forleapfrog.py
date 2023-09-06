@@ -120,7 +120,7 @@ if __name__ == '__main__':
         sample_percent=args.sample_percent_train, batch_size=args.batch_size, data_type="train",
         cut_num=args.train_cut)
 
-    train_encoder=
+    # train_encoder=
     input_dim = dataloader.feature
 
     ############ Command Related

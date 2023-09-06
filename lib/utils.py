@@ -195,7 +195,7 @@ def compute_loss_all_batches(model,
 			batch_dict_graph = get_next_batch_new(graph, device)
 			batch_dict_decoder = get_next_batch(decoder, device)
 
-			results = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
+			results, gt, f, r = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
 											   n_traj_samples=n_traj_samples, reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
 			for key in total.keys():
@@ -214,7 +214,7 @@ def compute_loss_all_batches(model,
 				total[key] = total[key] / n_test_batches
 
 
-	return total
+	return total,gt,f, r
 
 
 

@@ -57,6 +57,7 @@ parser.add_argument('--tensorboard_dir', type=str, default='tensorboards', help=
 parser.add_argument('--warmup_epoch', type=int, default=20, help='number of warmup epoch to train with forward mse only')
 parser.add_argument('--reverse_f_lambda', type=float, default=0, help='weight of reverse_f mse after warmup')
 parser.add_argument('--reverse_gt_lambda', type=float, default=0, help='weight of reverse_gt mse after warmup')
+parser.add_argument('--energy_lambda', type=float, default=0, help='weight of energy mse after warmup')
 parser.add_argument('--device', type=int, default=0, help='running device')
 parser.add_argument('--Tmax', type=float, default=2000, help='optimazor')
 parser.add_argument('--eta_min', type=float, default=0, help='optimazor')

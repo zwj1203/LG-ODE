@@ -6,12 +6,14 @@ import time
 
 class SpringSim(object):
     def __init__(self, n_balls=5, box_size=5., loc_std=.5, vel_norm=.5,
-                 interaction_strength=.1, noise_var=0.):
+                 interaction_strength=.1, external_strength=.1,external_omega=.1,noise_var=0.):
         self.n_balls = n_balls
         self.box_size = box_size
         self.loc_std = loc_std
         self.vel_norm = vel_norm
         self.interaction_strength = interaction_strength
+        self.external_strength = external_strength
+        self.external_omega = external_omega
         self.noise_var = noise_var
 
         self._spring_types = np.array([0., 0.5, 1.])
@@ -125,7 +127,7 @@ class SpringSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges
+            forces_size = - self.interaction_strength * edges - self.external_strength * np.cos(self.external_omega*T)
             np.fill_diagonal(forces_size,
                              0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
@@ -148,7 +150,7 @@ class SpringSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges
+                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
                 np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
@@ -256,7 +258,7 @@ class SpringSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges
+            forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
             np.fill_diagonal(forces_size,
                              0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
@@ -279,7 +281,7 @@ class SpringSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges
+                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
                 np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
@@ -378,7 +380,7 @@ class SpringSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges
+            forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
             np.fill_diagonal(forces_size,
                              0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
@@ -401,7 +403,7 @@ class SpringSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges
+                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
                 np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
@@ -449,7 +451,7 @@ class SpringSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges
+            forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
             np.fill_diagonal(forces_size,
                              0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
@@ -472,7 +474,7 @@ class SpringSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges
+                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
                 np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 

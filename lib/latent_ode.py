@@ -28,7 +28,7 @@ class LatentGraphODE(VAE_Baseline):
 		# means_z0 = first_point_mu.repeat(n_traj_samples,1,1) #[3,num_ball,10]
 		# sigmas_z0 = first_point_std.repeat(n_traj_samples,1,1) #[3,num_ball,10]
 		# first_point_enc = utils.sample_standard_gaussian(means_z0, sigmas_z0) #[3,num_ball,10]
-		num_ball=first_point_mu.size[0]
+		num_ball=first_point_mu.size()[0]
 
 		first_point_std = first_point_std.abs()
 

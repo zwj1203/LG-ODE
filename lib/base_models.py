@@ -37,6 +37,22 @@ class VAE_Baseline(nn.Module):
         # shape: [n_traj_samples]
         return log_density
 
+
+
+
+    def get_energy_gaussian_likelihood(self, truth, pred_y, n_ball, temporal_weights, k,mask):
+        # pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
+        # truth shape  [n_traj, n_tp, n_dim]
+
+        # Compute likelihood of the data under the predictions
+        truth_repeated = truth.repeat(pred_y.size(0), 1, 1, 1)
+        mask = mask.repeat(pred_y.size(0), 1, 1, 1)
+        gt_energy=compute_average_energy(truth_repeated,n_ball,k,mask)
+        pred_y_energy=compute_average_energy(pred_y,n_ball,k,mask)
+        res=compute_energy_likelihood(gt_energy, pred_y_energy,mse,temporal_weights=temporal_weights)
+        return res
+
+
     def get_f_r_gaussian_likelihood(self, pred_y, pred_y_reverse, temporal_weights, mask):
         # pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
         # truth shape  [n_traj, n_tp, n_dim]
@@ -67,8 +83,13 @@ class VAE_Baseline(nn.Module):
         # shape: [1]
         return torch.mean(log_density_data)
 
-    def get_energy_mse(mu_energy, data_energy):
-        diff = mu_energy- data_energy
+    def get_energy_mse(self,truth, pred_y,n_ball,temporal_weights,k,mask=None):
+        n_traj, n_tp, n_dim = truth.size()
+        truth_repeated = truth.repeat(pred_y.size(0), 1, 1, 1)
+        mask = mask.repeat(pred_y.size(0), 1, 1, 1)
+        gt_energy = compute_average_energy(truth_repeated, n_ball, k, mask)
+        pred_y_energy = compute_average_energy(pred_y, n_ball, k, mask)
+        diff = gt_energy- pred_y_energy
         mse = torch.mean(diff ** 2)
         return mse
 
@@ -142,21 +163,16 @@ class VAE_Baseline(nn.Module):
             pred_y, pred_y_reverse,
             mask=batch_dict_decoder["mask"])  # [1]
 
-        gt_energy = compute_averag_energy( batch_dict_decoder["data"], n_ball, k=1, mask=batch_dict_decoder["mask"])
-        pred_y_energy = compute_averag_energy(pred_y, n_ball, k=1, mask=batch_dict_decoder["mask"])
-        pred_y_reverse_energy=compute_averag_energy(pred_y_reverse, n_ball, k=1, mask=batch_dict_decoder["mask"])
 
-        Forward_gt_energy_rec_likelihood=self.compute_energy_likelihood(gt_energy,pred_y_energy)
-        Reverse_f_energy_rec_likelihood=self.compute_energy_likelihood(pred_y_reverse_energy,pred_y_energy)
-        Reverse_gt_energy_rec_likelihood=self.compute_energy_likelihood(gt_energy,pred_y_reverse_energy)
-        energy_mse=self.get_energy_mse(gt_energy,pred_y_energy)
+        Forward_gt_energy_rec_likelihood=self.get_energy_gaussian_likelihood(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=1,mask=batch_dict_decoder["mask"])
+        energy_mse=self.get_energy_mse(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=1,mask=batch_dict_decoder["mask"])
 
 
         # loss
 
-        loss = - torch.logsumexp(Forward_gt_rec_likelihood, 0) -reverse_f_lambda* torch.logsumexp(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.logsumexp(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.logsumexp(Forward_gt_energy_rec_likelihood)
+        loss = - torch.logsumexp(Forward_gt_rec_likelihood, 0) -reverse_f_lambda* torch.logsumexp(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.logsumexp(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.logsumexp(Forward_gt_energy_rec_likelihood,0)
         if torch.isnan(loss):
-            loss = - torch.mean(Forward_gt_rec_likelihood, 0) - reverse_f_lambda* torch.mean(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.mean(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.mean(Forward_gt_energy_rec_likelihood)
+            loss = - torch.mean(Forward_gt_rec_likelihood, 0) - reverse_f_lambda* torch.mean(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.mean(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.mean(Forward_gt_energy_rec_likelihood,0)
 
         results = {}
         results["loss"] = torch.mean(loss)
@@ -165,7 +181,7 @@ class VAE_Baseline(nn.Module):
         results["forward_gt_mse"] = torch.mean(Forward_gt_mse).data.item()
         results["reverse_f_mse"] = torch.mean(Reverse_f_mse).data.item()
         results["reverse_gt_mse"] = torch.mean(Reverse_gt_mse).data.item()
-        results['energy_mse']== torch.mean(energy_mse).data.item()
+        results['energy_mse']= torch.mean(energy_mse).data.item()
 
         # results["kl_first_p"] =  torch.mean(kldiv_z0).detach().data.item()
         # results["std_first_p"] = torch.mean(fp_std).detach().data.item()

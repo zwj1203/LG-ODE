@@ -88,9 +88,10 @@ def compute_mse(mu, data, mask):
 	res = compute_masked_likelihood(mu, data, mask, mse)
 	return res
 
-def compute_averag_energy(mu,n_ball,k,mask):
+def compute_average_energy(mu,n_ball,k,mask):
+	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
-	mu_tensor = torch.from_numpy(mu)
+
 	mu_nball= mu.view(-1, n_ball, n_timepoints, n_dims)
 	n_traj_pre=mu_nball.size()[0]
 	# 提取速度数据
@@ -108,12 +109,18 @@ def compute_averag_energy(mu,n_ball,k,mask):
 		for j in range(i + 1, n_ball):
 			displacement = positions[:, i, :, :] - positions[:, j, :, :]
 			displacement_magnitude = torch.norm(displacement, dim=-1)
+			potential_energies = potential_energies.to(device)
+			displacement_magnitude = displacement_magnitude.to(device)
+
 			potential_energies[:, i, :] += 0.5 * k * displacement_magnitude ** 2
 
 	total_potential_energy = torch.sum(potential_energies, dim=1)
 	total_energy_per_moment = kinetic_energies + total_potential_energy
-	average_energy_per_trajectory_masked = torch.mean(total_energy_per_moment*mask, dim=1)
-	return average_energy_per_trajectory_masked
+	mask_sliced = mask[:, 0, :, 0]  # 取第二和第四维度的第一个元素
+	mask_expanded = mask_sliced.unsqueeze(1).expand_as(total_energy_per_moment)
+	average_energy_per_trajectory_masked = torch.mean(total_energy_per_moment * mask_expanded, dim=1)
+
+	return average_energy_per_trajectory_masked  #[n_traj_pre]
 
 def compute_energy_likelihood(mu_energy, data_energy, likelihood_func, temporal_weights=None):
 	# Compute the likelihood per patient and per attribute so that we don't prioritize patients with more measurements

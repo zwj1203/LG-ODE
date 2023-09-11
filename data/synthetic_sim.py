@@ -790,7 +790,7 @@ class ChargedParticlesSim(object):
             return loc, vel, edges
 
 class PendulumSim(object):
-    def __init__(self, n_sticks=3, stick_length=5., stick_mass=5., loc_std=.5, vel_norm=.5,
+    def __init__(self, n_sticks=3, stick_length=5., stick_mass=5., loc_std=.1, vel_norm=.5,
                 noise_var=0.):
         self.n_sticks = n_sticks
         self.stick_length = stick_length

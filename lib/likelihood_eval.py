@@ -89,28 +89,28 @@ def compute_mse(mu, data, mask):
 	return res
 
 def compute_average_energy(mu,n_ball,k,mask):
-	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+	# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
 
 	mu_nball= mu.view(-1, n_ball, n_timepoints, n_dims)
 	n_traj_pre=mu_nball.size()[0]
 	# 提取速度数据
-	vel= mu[:, :, :, :2]
+	vel= mu[:, :, :, 2:]
 
 	# 提取位置数据
-	positions = mu[:, :, :, 2:]
+	positions = mu[:, :, :, :2]
 
 	# 计算动能
 	kinetic_energies = 0.5 * torch.sum(vel ** 2, dim=-1)
 
 	# 计算弹性势能
-	potential_energies = torch.zeros(n_traj_pre, n_ball, n_timepoints)
+	potential_energies = torch.zeros(n_traj_pre, n_ball, n_timepoints).to(mu.device)
 	for i in range(n_ball):
 		for j in range(i + 1, n_ball):
 			displacement = positions[:, i, :, :] - positions[:, j, :, :]
 			displacement_magnitude = torch.norm(displacement, dim=-1)
-			potential_energies = potential_energies.to(device)
-			displacement_magnitude = displacement_magnitude.to(device)
+			# potential_energies = potential_energies.to(device)
+			# displacement_magnitude = displacement_magnitude.to(device)
 
 			potential_energies[:, i, :] += 0.5 * k * displacement_magnitude ** 2
 

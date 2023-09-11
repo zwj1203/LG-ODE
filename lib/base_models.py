@@ -164,8 +164,8 @@ class VAE_Baseline(nn.Module):
             mask=batch_dict_decoder["mask"])  # [1]
 
 
-        Forward_gt_energy_rec_likelihood=self.get_energy_gaussian_likelihood(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=1,mask=batch_dict_decoder["mask"])
-        energy_mse=self.get_energy_mse(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=1,mask=batch_dict_decoder["mask"])
+        Forward_gt_energy_rec_likelihood=self.get_energy_gaussian_likelihood(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
+        energy_mse=self.get_energy_mse(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
 
 
         # loss

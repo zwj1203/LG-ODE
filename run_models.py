@@ -165,9 +165,9 @@ if __name__ == '__main__':
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
 
-    logname = 'n-balls%d_niters%d_lr%f-%d-%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log'%(
+    logname = 'n-balls%d_niters%d_lr%f-%d-%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log'%(
                                         args.n_balls, args.niters, args.lr, args.Tmax, args.eta_min, args.total_ode_step,
-                                        args.warmup_epoch, args.reverse_f_lambda,
+                                        args.warmup_epoch, args.energy_lambda, args.reverse_f_lambda,
                                         args.reverse_gt_lambda,args.train_cut,args.test_cut,args.sample_percent_train,args.sample_percent_train
                                     )
     logger = utils.get_logger(logpath=os.path.join(log_dir,logname), filepath=os.path.abspath(__file__))
@@ -200,10 +200,10 @@ if __name__ == '__main__':
         '%s_%s' % (args.data, task),
         'train_cut_%d' % args.train_cut,
         'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
-        'n-balls_%d_niters_%d_lr_%f_total_ode_step_%d_warmup_epoch_%d_reverse_f_lambda_%.2f_reverse_gt_lambda_%.2f' % (
+        'n-balls%d_niters%d_lr%f_total_ode_step%d_warmup_epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f' % (
             args.n_balls, args.niters, args.lr, args.total_ode_step,
             args.warmup_epoch, args.reverse_f_lambda,
-            args.reverse_gt_lambda)
+            args.reverse_gt_lambda,args.energy_lambda)
     ))
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph, energy_lambda ,reverse_f_lambda,reverse_gt_lambda):
 

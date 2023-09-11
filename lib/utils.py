@@ -173,12 +173,13 @@ def create_net(n_inputs, n_outputs, n_layers = 1,
 def compute_loss_all_batches(model,
 	encoder,graph,decoder,
 	n_batches, device,
-	n_traj_samples = 1, reverse_f_lambda = 1.,reverse_gt_lambda = 1.):
+	n_traj_samples = 1, energy_lambda = 1.,reverse_f_lambda = 1.,reverse_gt_lambda = 1.):
 
 	total = {}
 	total["loss"] = 0
 	total["likelihood"] = 0
 	total["mse"] = 0
+	total["energy_mse"] = 0
 	total["forward_gt_mse"] = 0
 	total["reverse_f_mse"] = 0
 	total["reverse_gt_mse"] = 0

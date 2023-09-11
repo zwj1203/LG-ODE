@@ -205,11 +205,11 @@ if __name__ == '__main__':
             args.warmup_epoch, args.reverse_f_lambda,
             args.reverse_gt_lambda)
     ))
-    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,reverse_f_lambda,reverse_gt_lambda):
+    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph, energy_lambda ,reverse_f_lambda,reverse_gt_lambda):
 
         optimizer.zero_grad()
         train_res,_,_,_ = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
-                                             n_traj_samples=3, reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
+                                             n_traj_samples=3, energy_lambda=energy_lambda,reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
         loss = train_res["loss"]
         loss.backward()
@@ -222,7 +222,7 @@ if __name__ == '__main__':
         del loss
         torch.cuda.empty_cache()
         # train_res, loss
-        return loss_value, train_res["mse"], train_res["likelihood"],train_res["forward_gt_mse"],train_res["reverse_f_mse"],train_res["reverse_gt_mse"]
+        return loss_value, train_res["mse"], train_res["likelihood"],train_res["energy_mse"],train_res["forward_gt_mse"],train_res["reverse_f_mse"],train_res["reverse_gt_mse"]
 
 
     def train_epoch(epo):
@@ -233,6 +233,7 @@ if __name__ == '__main__':
         reverse_f_mse_list = []
         reverse_gt_mse_list = []
         likelihood_list = []
+        energy_mse_list=[]
         kl_first_p_list = []
         std_first_p_list = []
 
@@ -254,12 +255,12 @@ if __name__ == '__main__':
 
             batch_dict_decoder = utils.get_next_batch(train_decoder, device)
 
-            loss, mse, likelihood,forward_gt_mse,reverse_f_mse,reverse_gt_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
+            loss, mse, likelihood,energy_mse,forward_gt_mse,reverse_f_mse,reverse_gt_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,energy_lambda,
                                                        reverse_f_lambda,reverse_gt_lambda)
 
             # saving results
             loss_list.append(loss), mse_list.append(mse), likelihood_list.append(
-                likelihood),forward_gt_mse_list.append(forward_gt_mse),reverse_f_mse_list.append(reverse_f_mse),reverse_gt_mse_list.append(reverse_gt_mse)
+                likelihood),energy_mse_list.append(energy_mse),forward_gt_mse_list.append(forward_gt_mse),reverse_f_mse_list.append(reverse_f_mse),reverse_gt_mse_list.append(reverse_gt_mse)
             # kl_first_p_list.append(kl_first_p), std_first_p_list.append(std_first_p)
 
             del batch_dict_encoder, batch_dict_graph, batch_dict_decoder
@@ -268,14 +269,14 @@ if __name__ == '__main__':
 
         scheduler.step()
 
-        message_train = 'Epoch {:04d} | [Train seq (cond on sampled tp)] | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
+        message_train = 'Epoch {:04d} | [Train seq (cond on sampled tp)] | Loss {:.6f} | Energy MSE {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
             epo,
-            np.mean(loss_list),
+            np.mean(loss_list),np.mean(energy_mse_list),
             np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list))
 
 
 
-        return message_train ,np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list)
+        return message_train ,np.mean(energy_mse_list), np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list)
 
 
 
@@ -284,27 +285,24 @@ if __name__ == '__main__':
         if epo<=args.warmup_epoch:
             reverse_f_lambda = 0
             reverse_gt_lambda = 0
+            energy_lambda=0
         else:
             reverse_f_lambda = args.reverse_f_lambda
             reverse_gt_lambda = args.reverse_gt_lambda
-        message_train,train_forward_gt_mse,train_reverse_f_mse,train_reverse_gt_mse = train_epoch(epo)
-
+            energy_lambda =  args.energy_lambda
+        message_train,train_energy_mse,train_forward_gt_mse,train_reverse_f_mse,train_reverse_gt_mse = train_epoch(epo)
         if epo % n_iters_to_viz == 0:
             model.eval()
 
-            # reverse_f_lambda = 0.5
-            # if 41 <= epo < 101:
-            #     reverse_f_lambda =0
 
-            #     reverse_gt_lambda = 0.5
 
             test_res,gt,f, r = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,
-                                                n_traj_samples=3, reverse_f_lambda= reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
+                                                n_traj_samples=3, energy_lambda=energy_lambda,reverse_f_lambda= reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
 
-            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
-                epo,reverse_f_lambda,reverse_gt_lambda,
-                test_res["loss"],
+            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | energy_lambda {:.4f} | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
+                epo, energy_lambda ,reverse_f_lambda,reverse_gt_lambda,
+                test_res["loss"],test_res["energy_mse"],
                 test_res["forward_gt_mse"], test_res["reverse_f_mse"],test_res["reverse_gt_mse"])
 
             logger.info("Experiment " + str(experimentID))
@@ -312,8 +310,8 @@ if __name__ == '__main__':
             logger.info(message_test)
             # logger.info(
             # "KL coef: {}".format(kl_coef))
-            print("data: %s, encoder: %s, lr: %s, epoch: %s, train_sample: %s,test_sample: %s, mode: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
-                args.data, args.z0_encoder, str(args.lr), str(args.niters), str(args.sample_percent_train), str(args.sample_percent_test), args.mode,reverse_f_lambda,reverse_gt_lambda))
+            print("data: %s, encoder: %s, lr: %s, epoch: %s, train_sample: %s,test_sample: %s, mode: %s, energy_lambda: %s, reverse_f_lambda: %s , reverse_gt_lambda: %s" % (
+                args.data, args.z0_encoder, str(args.lr), str(args.niters), str(args.sample_percent_train), str(args.sample_percent_test), args.mode,energy_lambda,reverse_f_lambda,reverse_gt_lambda))
 
             if test_res["forward_gt_mse"] < best_test_mse:
                 best_test_mse = test_res["forward_gt_mse"]
@@ -324,7 +322,7 @@ if __name__ == '__main__':
                     '%s_%s' % (args.data, task),
                     'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
                     'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
-                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda)
+                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda ,args.energy_lambda)
                 )
 
                 forward_dir = os.path.join(
@@ -332,7 +330,7 @@ if __name__ == '__main__':
                     '%s_%s' % (args.data, task),
                     'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
                     'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
-                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda)
+                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda,args.energy_lambda)
                 )
 
                 reverse_dir = os.path.join(
@@ -340,7 +338,7 @@ if __name__ == '__main__':
                     '%s_%s' % (args.data, task),
                     'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
                     'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
-                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda)
+                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda,args.energy_lambda)
                 )
 
                 # Create directories
@@ -375,10 +373,13 @@ if __name__ == '__main__':
             writer.add_scalar('train_MSE/train_forward_gt_mse', train_forward_gt_mse, epo)
             writer.add_scalar('train_MSE/train_reverse_f_mse', train_reverse_f_mse,epo)
             writer.add_scalar('train_MSE/train_reverse_gt_mse', train_reverse_gt_mse, epo)
+            writer.add_scalar('train_MSE/train_energy_mse', train_energy_mse, epo)
 
             writer.add_scalar('test_MSE/test_forward_gt_mse', test_res["forward_gt_mse"], epo)
             writer.add_scalar('test_MSE/test_reverse_f_mse', test_res["reverse_f_mse"], epo)
             writer.add_scalar('test_MSE/test_reverse_gt_mse', test_res["reverse_gt_mse"], epo)
+            writer.add_scalar('test_MSE/test_energy_mse', test_res["energy_mse"], epo)
+
 
 
             # writer.add_scalar('Weight/FGT_RF', test_res["forward_gt_mse"] / test_res["reverse_f_mse"], epo)

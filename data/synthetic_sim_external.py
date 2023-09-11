@@ -6,7 +6,7 @@ import time
 
 class SpringExternalSim(object):
     def __init__(self, n_balls=5, box_size=5., loc_std=.5, vel_norm=.5,
-                 interaction_strength=.1, external_strength=.1,external_omega=1,noise_var=0.):
+                 interaction_strength=.1, external_strength=.1,external_omega=0.1,noise_var=0.):
         self.n_balls = n_balls
         self.box_size = box_size
         self.loc_std = loc_std

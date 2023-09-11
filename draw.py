@@ -2,20 +2,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 # 加载.npy文件
-data = np.load('/home/zijiehuang/wanjia/LG-ODE/data/times_train_pendulum3.npy')
+data = np.load('/home/zijiehuang/wanjia/LG-ODE/data/loc_test_springs_external5.npy')
 print('shape : ', data.shape)
 
 
 # Plot for
 plt.figure()  # Create a new figure
-group_ball=data[0]
-print(group_ball)
+group_ball=data[90]
+# print(group_ball)
 print('group_ball shape: ' ,group_ball.shape)
-# for ball_index in range(3):
-#     pred_ball_trajectory = group_ball[ball_index]
-#     x=5.*np.cos(pred_ball_trajectory[:, 0])
-#     y=5.*np.sin(pred_ball_trajectory[:, 0])
-#     plt.scatter(x,y,  label=f'Ball {ball_index + 1}')
+for ball_index in range(5):
+    pred_ball_trajectory = group_ball[ball_index]
+    x=5.*np.cos(pred_ball_trajectory[:, 0])
+    y=5.*np.sin(pred_ball_trajectory[:, 0])
+    plt.scatter(x,y,  label=f'Ball {ball_index + 1}')
 
 plt.title('Trajectories of 5 Balls (PRED)')
 plt.xlabel('X Coordinate')

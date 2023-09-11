@@ -25,7 +25,7 @@ parser.add_argument('--save', type=str, default='experiments/', help="Path for s
 parser.add_argument('--save-graph', type=str, default='plot/', help="Path for save checkpoints")
 parser.add_argument('--load', type=str, default=None, help="name of ckpt. If None, run a new experiment.")
 parser.add_argument('-r', '--random-seed', type=int, default=1991, help="Random_seed")
-parser.add_argument('--data', type=str, default='spring', help="spring,charged,motion")
+parser.add_argument('--data', type=str, default='spring_external', help="spring,charged,motion,springt_external")
 parser.add_argument('--z0-encoder', type=str, default='GTrans', help="GTrans")
 parser.add_argument('-l', '--latents', type=int, default=16, help="Size of the latent state")
 parser.add_argument('--rec-dims', type=int, default=64, help="Dimensionality of the recognition model .")
@@ -74,6 +74,10 @@ assert (int(args.rec_dims % args.n_heads) == 0)
 if args.data == "spring":
     # args.dataset = 'wanjia/LG-ODE/data/example_data'
     args.suffix = '_springs5'
+    # args.total_ode_step = 60
+if args.data == "spring_external":
+    # args.dataset = 'wanjia/LG-ODE/data/example_data'
+    args.suffix = '_springs_external3'
     # args.total_ode_step = 60
 elif args.data == "charged":
     # args.dataset = 'wanjia/LG-ODE/data/example_data'

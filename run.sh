@@ -1,5 +1,5 @@
 #!/bin/bash
-device=5
+device=7
 
 epoch=2000
 batch_size=512
@@ -10,19 +10,19 @@ Tmax=2000
 eta_min=1e-6
 
 #observe ratio
-train_observe_ratio=0.6
-test_observe_ratio=0.6
+train_observe_ratio=0.4
+test_observe_ratio=0.4
 
 #reverse_lambda
 reverse_gt_lambda=0
-reverse_f_lambda=0.5
-energy_lambda=0.5
+reverse_f_lambda=0
+energy_lambda=0
 
-data='spring'  #help="spring,charged,motion"
+data='spring_external'  #help="spring,charged,motion"
 test_cut='400'
 
 # LP args
-train_cut=('2000' '1500' '1000' '750' '600' '300' '100'  )
+train_cut=('2000' )
 #train_cut=('1000' '750' '600' '300' '100' '1500' )
 
 #train_cut=('10'  )

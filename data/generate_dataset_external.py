@@ -3,13 +3,13 @@
         train observation length [ob_min, ob_max]
 '''
 
-from synthetic_sim import ChargedParticlesSim, SpringSim,  PendulumSim
+from synthetic_sim_external import  SpringExternalSim
 import time
 import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--simulation', type=str, default='pendulum',
+parser.add_argument('--simulation', type=str, default='springs_external',
                     help='What simulation to generate.')
 parser.add_argument('--num-train', type=int, default=20000,
                     help='Number of training simulations to generate.')
@@ -34,15 +34,9 @@ parser.add_argument('--seed', type=int, default=42,
 
 args = parser.parse_args()
 
-if args.simulation == 'springs':
-    sim = SpringSim(noise_var=0.0, n_balls=args.n_balls)
-    suffix = "_springs"
-elif args.simulation == 'charged':
-    sim = ChargedParticlesSim(noise_var=0.0, n_balls=args.n_balls)
-    suffix = '_charged'
-elif args.simulation == 'pendulum':
-    sim = PendulumSim(noise_var=0.0)
-    suffix = '_pendulum'
+if args.simulation == 'springs_external':
+    sim = SpringExternalSim(noise_var=0.0, n_balls=args.n_balls)
+    suffix = "_springs_external"
 else:
     raise ValueError('Simulation {} not implemented'.format(args.simulation))
 
@@ -52,7 +46,7 @@ np.random.seed(args.seed)
 print(suffix)
 
 
-def generate_dataset_spring_external(args,num_sims,isTrain = True):
+def generate_dataset_springs_external(args,num_sims,isTrain = True):
     loc_all = list()
     vel_all = list()
     edges = list()
@@ -69,7 +63,7 @@ def generate_dataset_spring_external(args,num_sims,isTrain = True):
 
         loc, vel, T_samples = sim.sample_trajectory_static_graph_irregular_difflength_each(args, edges=static_graph,
                                                                                                isTrain=isTrain)
-        print(123)
+        print('external ',i)
         if i % 100 == 0:
             print("Iter: {}, Simulation time: {}".format(i, time.time() - t))
         loc_all.append(loc)  # [49,2,5]
@@ -88,14 +82,14 @@ def generate_dataset_spring_external(args,num_sims,isTrain = True):
 if args.simulation =="springs_external":
     print("Generating {} test simulations".format(args.num_test))
 
-    loc_test, vel_test, edges_test, timestamps_test = generate_dataset_spring_external(args, args.num_test, isTrain=False)
+    loc_test, vel_test, edges_test, timestamps_test = generate_dataset_springs_external(args, args.num_test, isTrain=False)
     np.save('loc_test' + suffix + '.npy', loc_test)
     np.save('vel_test' + suffix + '.npy', vel_test)
     np.save('edges_test' + suffix + '.npy', edges_test)
     np.save('times_test' + suffix + '.npy', timestamps_test)
 
     print("Generating {} training simulations".format(args.num_train))
-    loc_train, vel_train, edges_train, timestamps_train = generate_dataset_spring_external(args, args.num_train, isTrain=True)
+    loc_train, vel_train, edges_train, timestamps_train = generate_dataset_springs_external(args, args.num_train, isTrain=True)
 
     np.save('loc_train' + suffix + '.npy', loc_train)
     np.save('vel_train' + suffix + '.npy', vel_train)

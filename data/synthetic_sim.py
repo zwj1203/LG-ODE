@@ -803,31 +803,6 @@ class PendulumSim(object):
         self._delta_T = 0.001
         self.g = 9.8
 
-    def _clamp(self, loc, vel):
-        '''
-        :param loc: 2xN location at one time stamp
-        :param vel: 2xN velocity at one time stamp
-        :return: location and velocity after hiting walls and returning after
-            elastically colliding with walls
-        '''
-        assert (np.all(loc < self.box_size * 3))
-        assert (np.all(loc > -self.box_size * 3))
-
-        over = loc > self.box_size
-        loc[over] = 2 * self.box_size - loc[over]
-        assert (np.all(loc <= self.box_size))
-
-        # assert(np.all(vel[over]>0))
-        vel[over] = -np.abs(vel[over])
-
-        under = loc < -self.box_size
-        loc[under] = -2 * self.box_size - loc[under]
-        # assert (np.all(vel[under] < 0))
-        assert (np.all(loc >= -self.box_size))
-        vel[under] = np.abs(vel[under])
-
-        return loc, vel
-
 
     def generate_static_graph(self):
         # Sample edges: without self-loop
@@ -903,10 +878,7 @@ class PendulumSim(object):
         p_next = p_next * self.vel_norm / p_norm
         
         vel_next = self.calculate_angular_speed(loc_next, p_next)
-        # self._clamp: eturn: location and velocity after hiting walls and returning after
-        # elastically colliding with walls
-        
-        loc[0, :, :], vel[0, :, :] = self._clamp(loc_next, vel_next)
+
 
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
@@ -918,7 +890,6 @@ class PendulumSim(object):
             # run leapfrog
             for i in range(1, T):
                 loc_next += self._delta_T * vel_next
-                loc_next, vel_next = self._clamp(loc_next, vel_next)
 
                 if i % sample_freq ==0:
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
@@ -980,8 +951,9 @@ class PendulumSim(object):
         
 
 if __name__ == '__main__':
-    sim = SpringSim()
+    # sim = SpringSim()
     # sim = ChargedParticlesSim()
+    sim = PendulumSim()
 
     t = time.time()
     loc, vel, edges = sim.sample_trajectory(T=5000, sample_freq=100)

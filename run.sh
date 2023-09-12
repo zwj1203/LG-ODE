@@ -1,5 +1,5 @@
 #!/bin/bash
-device=1
+device=7
 
 epoch=2000
 batch_size=512
@@ -22,8 +22,8 @@ data='spring_external'  #help="spring,charged,motion"
 test_cut='400'
 
 # LP args
-train_cut=('2000' )
-#train_cut=('1000' '750' '600' '300' '100' '1500' )
+train_cut=('2000' '1500' '1000' '750' '600' '300' '100')
+#train_cut=(  )
 
 #train_cut=('10'  )
 

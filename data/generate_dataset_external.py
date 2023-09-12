@@ -5,8 +5,10 @@
 
 from synthetic_sim_external import  SpringExternalSim
 import time
+import os
 import numpy as np
 import argparse
+from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--simulation', type=str, default='springs_external',
@@ -85,16 +87,21 @@ if args.simulation =="springs_external":
     print("Generating {} test simulations".format(args.num_test))
 
     loc_test, vel_test, edges_test, timestamps_test = generate_dataset_springs_external(args, args.num_test, isTrain=False)
-    np.save('loc_test' + suffix + '.npy', loc_test)
-    np.save('vel_test' + suffix + '.npy', vel_test)
-    np.save('edges_test' + suffix + '.npy', edges_test)
-    np.save('times_test' + suffix + '.npy', timestamps_test)
+    spring_external_dir=os.path.join('spring_external')
+    Path(spring_external_dir).mkdir(parents=True, exist_ok=True)
+    np.save(os.path.join( spring_external_dir,'loc_test' + suffix + '.npy'), loc_test)
+    np.save(os.path.join( spring_external_dir,'vel_test' + suffix + '.npy'), vel_test)
+    np.save(os.path.join( spring_external_dir,'edges_test' + suffix + '.npy'), edges_test)
+    np.save(os.path.join( spring_external_dir,'times_test' + suffix + '.npy'), timestamps_test)
+
+
+
 
     print("Generating {} training simulations".format(args.num_train))
     loc_train, vel_train, edges_train, timestamps_train = generate_dataset_springs_external(args, args.num_train, isTrain=True)
 
-    np.save('loc_train' + suffix + '.npy', loc_train)
-    np.save('vel_train' + suffix + '.npy', vel_train)
-    np.save('edges_train' + suffix + '.npy', edges_train)
-    np.save('times_train' + suffix + '.npy', timestamps_train)
+    np.save(os.path.join(spring_external_dir, 'loc_train' + suffix + '.npy'), loc_train)
+    np.save(os.path.join(spring_external_dir, 'vel_train' + suffix + '.npy'), vel_train)
+    np.save(os.path.join(spring_external_dir, 'edges_train' + suffix + '.npy'), edges_train)
+    np.save(os.path.join(spring_external_dir, 'times_train' + suffix + '.npy'), timestamps_train)
 

@@ -127,9 +127,9 @@ class SpringExternalSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges - self.external_strength * np.cos(self.external_omega*T)
+            forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
-                             0)  # self forces are zero (fixes division by zero)
+                             - self.external_strength * np.cos(self.external_omega*T))  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
                  np.concatenate((
                      np.subtract.outer(loc_next[0, :],
@@ -150,8 +150,8 @@ class SpringExternalSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
-                np.fill_diagonal(forces_size, 0)
+                forces_size = - self.interaction_strength * edges
+                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -258,9 +258,9 @@ class SpringExternalSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
+            forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
-                             0)  # self forces are zero (fixes division by zero)
+                             - self.external_strength * np.cos(self.external_omega*T))  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
                  np.concatenate((
                      np.subtract.outer(loc_next[0, :],
@@ -281,8 +281,8 @@ class SpringExternalSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
-                np.fill_diagonal(forces_size, 0)
+                forces_size = - self.interaction_strength * edges
+                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -403,8 +403,8 @@ class SpringExternalSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
-                np.fill_diagonal(forces_size, 0)
+                forces_size = - self.interaction_strength * edges
+                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -451,9 +451,9 @@ class SpringExternalSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges - self.external_strength * np.cos(self.external_omega*T)
+            forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
-                             0)  # self forces are zero (fixes division by zero)
+                             - self.external_strength * np.cos(self.external_omega*T))  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
                  np.concatenate((
                      np.subtract.outer(loc_next[0, :],
@@ -474,8 +474,8 @@ class SpringExternalSim(object):
                     loc[counter, :, :], vel[counter, :, :] = loc_next, vel_next
                     counter += 1
 
-                forces_size = - self.interaction_strength * edges - self.external_strength * np.cos(self.external_omega*T)
-                np.fill_diagonal(forces_size, 0)
+                forces_size = - self.interaction_strength * edges
+                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *

@@ -52,7 +52,7 @@ class ParseData(object):
         print("number graph in   "+data_type+"   is %d" % self.num_graph)
         print("number atoms in   " + data_type + "   is %d" % self.num_atoms)
 
-        if self.suffix == "_springs5" or self.suffix == "_charged5":
+        if self.suffix == "_springs5" or self.suffix == "_charged5" or self.suffix == '_springs_external5':
             # Normalize features to [-1, 1], across test and train dataset
 
             if self.max_loc == None:
@@ -314,7 +314,7 @@ class ParseData(object):
 
         # compute cutting window size:
         if self.cutting_edge:
-            if self.suffix == "_springs5" or self.suffix == "_charged5":
+            if self.suffix == "_springs5" or self.suffix == "_charged5" or self.suffix == '_springs_external5':
                 max_gap = (self.total_step - 40*self.sample_percent) /self.total_step
             else:
                 max_gap = (self.total_step - 30 * self.sample_percent) / self.total_step

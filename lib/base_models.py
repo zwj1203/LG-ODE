@@ -164,15 +164,19 @@ class VAE_Baseline(nn.Module):
             mask=batch_dict_decoder["mask"])  # [1]
 
 
-        Forward_gt_energy_rec_likelihood=self.get_energy_gaussian_likelihood(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
-        energy_mse=self.get_energy_mse(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
+        # Forward_gt_energy_rec_likelihood=self.get_energy_gaussian_likelihood(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
+        # energy_mse=self.get_energy_mse(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
 
 
         # loss
 
-        loss = - torch.logsumexp(Forward_gt_rec_likelihood, 0) -reverse_f_lambda* torch.logsumexp(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.logsumexp(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.logsumexp(Forward_gt_energy_rec_likelihood,0)
+        # loss = - torch.logsumexp(Forward_gt_rec_likelihood, 0) -reverse_f_lambda* torch.logsumexp(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.logsumexp(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.logsumexp(Forward_gt_energy_rec_likelihood,0)
+        # if torch.isnan(loss):
+        #     loss = - torch.mean(Forward_gt_rec_likelihood, 0) - reverse_f_lambda* torch.mean(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.mean(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.mean(Forward_gt_energy_rec_likelihood,0)
+
+        loss = - torch.logsumexp(Forward_gt_rec_likelihood, 0) -reverse_f_lambda* torch.logsumexp(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.logsumexp(Reverse_gt_rec_likelihood, 0)
         if torch.isnan(loss):
-            loss = - torch.mean(Forward_gt_rec_likelihood, 0) - reverse_f_lambda* torch.mean(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.mean(Reverse_gt_rec_likelihood, 0)-energy_lambda*torch.mean(Forward_gt_energy_rec_likelihood,0)
+            loss = - torch.mean(Forward_gt_rec_likelihood, 0) - reverse_f_lambda* torch.mean(Reverse_f_rec_likelihood, 0)-reverse_gt_lambda* torch.mean(Reverse_gt_rec_likelihood, 0)
 
         results = {}
         results["loss"] = torch.mean(loss)
@@ -181,7 +185,7 @@ class VAE_Baseline(nn.Module):
         results["forward_gt_mse"] = torch.mean(Forward_gt_mse).data.item()
         results["reverse_f_mse"] = torch.mean(Reverse_f_mse).data.item()
         results["reverse_gt_mse"] = torch.mean(Reverse_gt_mse).data.item()
-        results['energy_mse']= torch.mean(energy_mse).data.item()
+        # results['energy_mse']= torch.mean(energy_mse).data.item()
 
         # results["kl_first_p"] =  torch.mean(kldiv_z0).detach().data.item()
         # results["std_first_p"] = torch.mean(fp_std).detach().data.item()

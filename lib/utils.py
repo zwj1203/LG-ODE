@@ -179,7 +179,7 @@ def compute_loss_all_batches(model,
 	total["loss"] = 0
 	total["likelihood"] = 0
 	total["mse"] = 0
-	total["energy_mse"] = 0
+	# total["energy_mse"] = 0
 	total["forward_gt_mse"] = 0
 	total["reverse_f_mse"] = 0
 	total["reverse_gt_mse"] = 0

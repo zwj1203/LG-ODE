@@ -100,11 +100,12 @@ class PendulumSim(object):
         angle_in_degrees = 90
         angle_in_radians = np.radians(angle_in_degrees)
 
-        loc_next = np.random.uniform(0,angle_in_radians , (1, 3)) * self.loc_std
+        loc_next = np.random.uniform(0, np.pi / 2, (1, 3)) * self.loc_std
+        loc_next = np.mod(loc_next, np.pi)
 
         p_next = np.zeros((1, 3))
-        p_norm = np.sqrt((p_next ** 2).sum(axis=0)).reshape(1, -1)
-        p_next = p_next * self.vel_norm / p_norm
+        # p_norm = np.sqrt((p_next ** 2).sum(axis=0)).reshape(1, -1)
+        # p_next = p_next * self.vel_norm / p_norm
 
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):

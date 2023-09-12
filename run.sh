@@ -1,5 +1,5 @@
 #!/bin/bash
-device=7
+device=1
 
 epoch=2000
 batch_size=512
@@ -15,7 +15,7 @@ test_observe_ratio=0.4
 
 #reverse_lambda
 reverse_gt_lambda=0
-reverse_f_lambda=0
+reverse_f_lambda=0.5
 energy_lambda=0
 
 data='spring_external'  #help="spring,charged,motion"

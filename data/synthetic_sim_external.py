@@ -500,7 +500,7 @@ if __name__ == '__main__':
     # sim = ChargedParticlesSim()
 
     t = time.time()
-    loc, vel, edges = sim.sample_trajectory(T=5000, sample_freq=100)
+    loc, vel, edges = sim.sample_trajectory(T=10000, sample_freq=100)
 
     print(edges)
     print("Simulation time: {}".format(time.time() - t))

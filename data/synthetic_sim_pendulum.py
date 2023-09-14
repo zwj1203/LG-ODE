@@ -98,7 +98,7 @@ class PendulumSim(object):
 
         # loc_next = np.random.uniform(0, np.pi / 2, (1, 3)) * self.loc_std
         loc_next = np.full((1, 3), np.pi / 2)
-        loc_next = np.mod(loc_next, np.pi)
+        loc_next = np.mod(loc_next, 2.*np.pi)
         print('initial',loc_next)
 
         p_next = np.zeros((1, 3))
@@ -191,7 +191,7 @@ class PendulumSim(object):
         # loc_next = np.random.uniform(0, np.pi/2, (1, 3)) * self.loc_std
         # loc_next = np.mod(loc_next, np.pi)
         loc_next = np.full((1, 3), np.pi / 2)
-        loc_next = np.mod(loc_next, np.pi)
+        loc_next = np.mod(loc_next, 2.*np.pi)
         print('initial loc:', loc_next)
         p_next =np.zeros((1, 3))
         print('initial p: ', p_next)
@@ -205,18 +205,18 @@ class PendulumSim(object):
             for i in range(1, T):
                 d_loc_1=self.calculate_angular_speed(loc_next, p_next)*self._delta_T
                 d_p_1 = self.calculate_p_dot(loc_next, loc_dot)*self._delta_T
-                loc_dot_1 = self.calculate_angular_speed(loc_next + 1 / 2 * d_loc_1, p_next + 1 / 2 * d_p_1)
 
-                d_loc_2 =  loc_dot_1 * self._delta_T
-                d_p_2 = self.calculate_p_dot(loc_next+1/2*d_loc_1, loc_dot_1) * self._delta_T
-                loc_dot_2 = self.calculate_angular_speed(loc_next + 1 / 2 * d_loc_2, p_next + 1 / 2 * d_p_2)
+                # loc_dot_1 = self.calculate_angular_speed(loc_next + 1 / 2 * d_loc_1, p_next + 1 / 2 * d_p_1)
+                d_loc_2 =  self.calculate_angular_speed(loc_next + 1 / 2 * d_loc_1, p_next + 1 / 2 * d_p_1) * self._delta_T
+                d_p_2 = self.calculate_p_dot(loc_next+1/2*d_loc_1, d_loc_1/self._delta_T) * self._delta_T
+                # loc_dot_2 = self.calculate_angular_speed(loc_next + 1 / 2 * d_loc_2, p_next + 1 / 2 * d_p_2)
 
-                d_loc_3 = loc_dot_2 * self._delta_T
-                d_p_3 = self.calculate_p_dot(loc_next + 1 / 2 * d_loc_2, loc_dot_2) * self._delta_T
-                loc_dot_3 = self.calculate_angular_speed(loc_next + d_loc_3, p_next +  d_p_3)
+                d_loc_3 = self.calculate_angular_speed(loc_next + 1 / 2 * d_loc_2, p_next + 1 / 2 * d_p_2) * self._delta_T
+                d_p_3 = self.calculate_p_dot(loc_next + 1 / 2 * d_loc_2, d_loc_2/self._delta_T) * self._delta_T
+                # loc_dot_3 = self.calculate_angular_speed(loc_next + d_loc_3, p_next +  d_p_3)
 
-                d_loc_4 = loc_dot_3 * self._delta_T
-                d_p_4 = self.calculate_p_dot(loc_next +  d_loc_3, loc_dot_3) * self._delta_T
+                d_loc_4 = self.calculate_angular_speed(loc_next + d_loc_3, p_next +  d_p_3) * self._delta_T
+                d_p_4 = self.calculate_p_dot(loc_next +  d_loc_3, d_loc_3/self._delta_T) * self._delta_T
 
                 d_loc=(1/6)*(d_loc_1+2*d_loc_2+2*d_loc_3+d_loc_4)
                 d_p=(1/6)*(d_p_1+2*d_p_2+2*d_p_3+d_p_4)
@@ -278,7 +278,7 @@ if __name__ == '__main__':
     sim = PendulumSim()
 
     t = time.time()
-    loc, vel, edges = sim.sample_trajectory(T=5000, sample_freq=100)
+    loc, vel, edges = sim.sample_trajectory(T=50000, sample_freq=100)
     print("Simulation time: {}".format(time.time() - t))
     vel_norm = np.sqrt((vel ** 2).sum(axis=1))
     plt.figure()

@@ -1,28 +1,29 @@
 #!/bin/bash
-device=7
+device=2
 
-epoch=2000
+epoch=1000
 batch_size=512
 
 #lr
 lr='1e-4'
-Tmax=2000
+Tmax=1000
 eta_min=1e-6
 
 #observe ratio
-train_observe_ratio=0.4
-test_observe_ratio=0.4
+train_observe_ratio=0.6
+test_observe_ratio=0.6
 
 #reverse_lambda
 reverse_gt_lambda=0
-reverse_f_lambda=0.5
+reverse_f_lambda=0.0
 energy_lambda=0
 
-data='spring_external'  #help="spring,charged,motion"
+data='damped_spring'  #help="simple_spring,damped_spring,forced_spring,charged,pendulum"
 test_cut='400'
 
 # LP args
-train_cut=('2000' '1500' '1000' '750' '600' '300' '100')
+train_cut="2000"
+
 #train_cut=(  )
 
 #train_cut=('10'  )

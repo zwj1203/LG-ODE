@@ -13,9 +13,9 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('--simulation', type=str, default='pendulum',
                     help='What simulation to generate.')
-parser.add_argument('--num-train', type=int, default=1,
+parser.add_argument('--num-train', type=int, default=2000,
                     help='Number of training simulations to generate.')
-parser.add_argument('--num-test', type=int, default=1,
+parser.add_argument('--num-test', type=int, default=500,
                     help='Number of test simulations to generate.')
 parser.add_argument('--ode', type=int, default=6000,
                     help='Length of trajectory.')

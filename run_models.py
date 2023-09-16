@@ -25,7 +25,7 @@ parser.add_argument('--save', type=str, default='experiments/', help="Path for s
 parser.add_argument('--save-graph', type=str, default='plot/', help="Path for save checkpoints")
 parser.add_argument('--load', type=str, default=None, help="name of ckpt. If None, run a new experiment.")
 parser.add_argument('-r', '--random-seed', type=int, default=1991, help="Random_seed")
-parser.add_argument('--data', type=str, default='charged', help="simple_spring,damped_spring,forced_spring,charged,pendulum")
+parser.add_argument('--data', type=str, default='pendulum', help="simple_spring,damped_spring,forced_spring,charged,pendulum")
 parser.add_argument('--z0-encoder', type=str, default='GTrans', help="GTrans")
 parser.add_argument('-l', '--latents', type=int, default=16, help="Size of the latent state")
 parser.add_argument('--rec-dims', type=int, default=64, help="Dimensionality of the recognition model .")

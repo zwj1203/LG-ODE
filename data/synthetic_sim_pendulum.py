@@ -279,12 +279,12 @@ class PendulumSim(object):
                     loc_theta_sample.append(loc_theta[Ts_ball, :, i])
                     vel_theta_sample.append(vel_theta[Ts_ball, :, i])
                     time_sample.append(Ts_ball)
-            print('initial theta:', loc_theta_sample[0])
-            print('initial theta:', loc_theta_sample[0][0])
-            print('initial theta sin:', np.sin(loc_theta_sample[0][0]))
-            print('initial theta cos:', np.cos(loc_theta_sample[0][0]))
-
-            print('initial loc:', loc_sample[0])
+            # print('initial theta:', loc_theta_sample[0])
+            # print('initial theta:', loc_theta_sample[0][0])
+            # print('initial theta sin:', np.sin(loc_theta_sample[0][0]))
+            # print('initial theta cos:', np.cos(loc_theta_sample[0][0]))
+            #
+            # print('initial loc:', loc_sample[0])
 
 
             return loc_sample, vel_sample ,loc_theta_sample,vel_theta_sample,time_sample

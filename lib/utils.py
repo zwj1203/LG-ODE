@@ -89,7 +89,8 @@ def sample_standard_gaussian(mu, sigma):
 def get_dict_template():
 	return {"data": None,
 			"time_setps": None,
-			"mask": None
+			"mask": None,
+			"time_first": None
 			}
 def get_next_batch_new(dataloader,device):
 	data_dict = dataloader.__next__()
@@ -105,7 +106,10 @@ def get_next_batch(dataloader,device):
 
 	batch_dict["data"] = data_dict["data"].to(device)
 	batch_dict["time_steps"] = data_dict["time_steps"].to(device)
-	batch_dict["mask"] = data_dict["mask"].to(device)
+	if "mask" in data_dict:
+		batch_dict["mask"] = data_dict["mask"].to(device)
+	if "time_first" in data_dict:
+		batch_dict["time_first"] = data_dict["time_first"].to(device)
 
 	return batch_dict
 
@@ -216,7 +220,6 @@ def compute_loss_all_batches(model,
 
 
 	return total,gt,f, r
-
 
 
 

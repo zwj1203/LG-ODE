@@ -4,16 +4,18 @@ import time
 
 
 
-class SpringExternalSim(object):
+class SpringDampedSim(object):
     def __init__(self, n_balls=5, box_size=5., loc_std=.5, vel_norm=.5,
-                 interaction_strength=.1, external_strength=.5,external_omega=0.5,noise_var=0.):
+                 interaction_strength=.1,damped_strength=.1,noise_var=0.):
         self.n_balls = n_balls
         self.box_size = box_size
         self.loc_std = loc_std
         self.vel_norm = vel_norm
         self.interaction_strength = interaction_strength
-        self.external_strength = external_strength
-        self.external_omega = external_omega
+        # self.external_strength = external_strength
+        self.damped_strength = damped_strength
+
+        # self.external_omega = external_omega
         self.noise_var = noise_var
 
         self._spring_types = np.array([0., 0.5, 1.])
@@ -129,7 +131,7 @@ class SpringExternalSim(object):
 
             forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
-                             - self.external_strength * np.cos(self.external_omega*T))  # self forces are zero (fixes division by zero)
+                             0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
                  np.concatenate((
                      np.subtract.outer(loc_next[0, :],
@@ -140,7 +142,7 @@ class SpringExternalSim(object):
             F[F > self._max_F] = self._max_F
             F[F < -self._max_F] = -self._max_F
 
-            vel_next += self._delta_T * F
+            vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # run leapfrog
             for i in range(1, T):
                 loc_next += self._delta_T * vel_next
@@ -151,7 +153,7 @@ class SpringExternalSim(object):
                     counter += 1
 
                 forces_size = - self.interaction_strength * edges
-                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
+                np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -164,7 +166,7 @@ class SpringExternalSim(object):
                     axis=-1)
                 F[F > self._max_F] = self._max_F
                 F[F < -self._max_F] = -self._max_F
-                vel_next += self._delta_T * F
+                vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # Add noise to observations
             loc += np.random.randn(step, 2, self.n_balls) * self.noise_var
             vel += np.random.randn(step, 2, self.n_balls) * self.noise_var
@@ -260,7 +262,7 @@ class SpringExternalSim(object):
 
             forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
-                             - self.external_strength * np.cos(self.external_omega*T))  # self forces are zero (fixes division by zero)
+                             0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
                  np.concatenate((
                      np.subtract.outer(loc_next[0, :],
@@ -271,7 +273,7 @@ class SpringExternalSim(object):
             F[F > self._max_F] = self._max_F
             F[F < -self._max_F] = -self._max_F
 
-            vel_next += self._delta_T * F
+            vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # run leapfrog
             for i in range(1, T):
                 loc_next += self._delta_T * vel_next
@@ -282,7 +284,7 @@ class SpringExternalSim(object):
                     counter += 1
 
                 forces_size = - self.interaction_strength * edges
-                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
+                np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -295,7 +297,7 @@ class SpringExternalSim(object):
                     axis=-1)
                 F[F > self._max_F] = self._max_F
                 F[F < -self._max_F] = -self._max_F
-                vel_next += self._delta_T * F
+                vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # Add noise to observations
             loc += np.random.randn(step, 2, self.n_balls) * self.noise_var
             vel += np.random.randn(step, 2, self.n_balls) * self.noise_var
@@ -380,7 +382,7 @@ class SpringExternalSim(object):
         # disables division by zero warning, since I fix it with fill_diagonal
         with np.errstate(divide='ignore'):
 
-            forces_size = - self.interaction_strength * edges- self.external_strength * np.cos(self.external_omega*T)
+            forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
                              0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
@@ -393,7 +395,7 @@ class SpringExternalSim(object):
             F[F > self._max_F] = self._max_F
             F[F < -self._max_F] = -self._max_F
 
-            vel_next += self._delta_T * F
+            vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # run leapfrog
             for i in range(1, T):
                 loc_next += self._delta_T * vel_next
@@ -404,7 +406,7 @@ class SpringExternalSim(object):
                     counter += 1
 
                 forces_size = - self.interaction_strength * edges
-                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
+                np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -417,7 +419,7 @@ class SpringExternalSim(object):
                     axis=-1)
                 F[F > self._max_F] = self._max_F
                 F[F < -self._max_F] = -self._max_F
-                vel_next += self._delta_T * F
+                vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # Add noise to observations
             loc += np.random.randn(T_save, 2, self.n_balls) * self.noise_var
             vel += np.random.randn(T_save, 2, self.n_balls) * self.noise_var
@@ -443,6 +445,7 @@ class SpringExternalSim(object):
         loc = np.zeros((T_save, 2, n))
         vel = np.zeros((T_save, 2, n))
         loc_next = np.random.randn(2, n) * self.loc_std
+        print('initial :', loc_next )
         vel_next = np.random.randn(2, n)
         v_norm = np.sqrt((vel_next ** 2).sum(axis=0)).reshape(1, -1)
         vel_next = vel_next * self.vel_norm / v_norm
@@ -453,7 +456,7 @@ class SpringExternalSim(object):
 
             forces_size = - self.interaction_strength * edges
             np.fill_diagonal(forces_size,
-                             - self.external_strength * np.cos(self.external_omega*T))  # self forces are zero (fixes division by zero)
+                             0)  # self forces are zero (fixes division by zero)
             F = (forces_size.reshape(1, n, n) *
                  np.concatenate((
                      np.subtract.outer(loc_next[0, :],
@@ -464,7 +467,7 @@ class SpringExternalSim(object):
             F[F > self._max_F] = self._max_F
             F[F < -self._max_F] = -self._max_F
 
-            vel_next += self._delta_T * F
+            vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # run leapfrog
             for i in range(1, T):
                 loc_next += self._delta_T * vel_next
@@ -475,7 +478,7 @@ class SpringExternalSim(object):
                     counter += 1
 
                 forces_size = - self.interaction_strength * edges
-                np.fill_diagonal(forces_size, - self.external_strength * np.cos(self.external_omega*T))
+                np.fill_diagonal(forces_size, 0)
                 # assert (np.abs(forces_size[diag_mask]).min() > 1e-10)
 
                 F = (forces_size.reshape(1, n, n) *
@@ -488,7 +491,7 @@ class SpringExternalSim(object):
                     axis=-1)
                 F[F > self._max_F] = self._max_F
                 F[F < -self._max_F] = -self._max_F
-                vel_next += self._delta_T * F
+                vel_next += self._delta_T * (F- self.damped_strength * vel_next)
             # Add noise to observations
             loc += np.random.randn(T_save, 2, self.n_balls) * self.noise_var
             vel += np.random.randn(T_save, 2, self.n_balls) * self.noise_var
@@ -496,36 +499,35 @@ class SpringExternalSim(object):
 
 
 if __name__ == '__main__':
-    sim = SpringExternalSim()
+    sim = SpringDampedSim()
     # sim = ChargedParticlesSim()
 
     t = time.time()
-    loc, vel, edges = sim.sample_trajectory(T=30000, sample_freq=100)
+    loc, vel, edges = sim.sample_trajectory(T=50000, sample_freq=500)
 
     print(edges)
     print("Simulation time: {}".format(time.time() - t))
     vel_norm = np.sqrt((vel ** 2).sum(axis=1))
     plt.figure()
-
-    for i in range(loc.shape[-1]):
-        plt.scatter(loc[:, 0, i], loc[:, 1, i], label=f'Ball {i + 1}')
-        plt.plot(loc[:, 0, i], loc[:, 1, i])
-        plt.plot(loc[0, 0, i], loc[0, 1, i], 'd')
+    axes = plt.gca()
+    # axes.set_xlim([-2., 2.])
+    # axes.set_ylim([-2., 2.])
     plt.xlabel('X Coordinate')
     plt.ylabel('Y Coordinate')
-    plt.title('Trajectories of 5 Balls (External) ')
+    plt.title('Trajectories of 5 Balls (Damped) ')
     plt.grid(True)
 
+    for i in range(loc.shape[-1]):
+        plt.scatter(loc[:, 0, i], loc[:, 1, i],label=f'Ball {i + 1}')
+        plt.plot(loc[:, 0, i], loc[:, 1, i])
+        plt.plot(loc[0, 0, i], loc[0, 1, i], 'd')
+
     plt.figure()
-    axes = plt.gca()
-    # axes.set_xlim([0., 2.])
-    # axes.set_ylim([0., 2.])
     energies = [sim._energy(loc[i, :, :], vel[i, :, :], edges) for i in
                 range(loc.shape[0])]
     plt.plot(energies)
-    plt.title('Energy (external)')
+    plt.title('Energy (damped)')
     plt.xlabel('X Coordinate')
     plt.ylabel('Y Coordinate')
     plt.grid(True)
-    plt.show()
     plt.show()

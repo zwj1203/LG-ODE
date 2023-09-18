@@ -797,20 +797,34 @@ if __name__ == '__main__':
     # sim = ChargedParticlesSim()
 
     t = time.time()
-    loc, vel, edges = sim.sample_trajectory(T=5000, sample_freq=100)
+    loc, vel, edges = sim.sample_trajectory(T=20000, sample_freq=100)
 
     print(edges)
     print("Simulation time: {}".format(time.time() - t))
     vel_norm = np.sqrt((vel ** 2).sum(axis=1))
     plt.figure()
-    axes = plt.gca()
-    axes.set_xlim([-5., 5.])
-    axes.set_ylim([-5., 5.])
+
     for i in range(loc.shape[-1]):
+        plt.scatter(loc[:, 0, i], loc[:, 1, i], label=f'Ball {i + 1}')
         plt.plot(loc[:, 0, i], loc[:, 1, i])
         plt.plot(loc[0, 0, i], loc[0, 1, i], 'd')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.title('Trajectories of 5 Balls (simple) ')
+    plt.grid(True)
+
     plt.figure()
+    axes = plt.gca()
+    axes.set_xlim([0., 2.])
+    axes.set_ylim([0., 2.])
     energies = [sim._energy(loc[i, :, :], vel[i, :, :], edges) for i in
                 range(loc.shape[0])]
+
     plt.plot(energies)
+    plt.title('Energy (simple)')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.grid(True)
     plt.show()
+    plt.show()
+

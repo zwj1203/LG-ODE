@@ -212,11 +212,10 @@ if __name__ == '__main__':
     #     args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
-
-    logname = 'n-balls%d_niters%d_lr%f-%d-%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log'%(
+    logname = 'n-balls%d_niters%d_lr%f-%d-%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f_nlayers%d.log'%(
                                         args.n_balls, args.niters, args.lr, args.Tmax, args.eta_min, args.total_ode_step,
-                                        args.warmup_epoch, args.energy_lambda, args.reverse_f_lambda,
-                                        args.reverse_gt_lambda,args.train_cut,args.test_cut,args.sample_percent_train,args.sample_percent_train
+                                        args.warmup_epoch, args.reverse_f_lambda, args.train_cut,args.test_cut,
+                                        args.sample_percent_train,args.sample_percent_train, args.nb_layers
                                     )
     logger = utils.get_logger(logpath=os.path.join(log_dir,logname), filepath=os.path.abspath(__file__))
     logger.info(input_command)
@@ -248,10 +247,9 @@ if __name__ == '__main__':
         '%s_%s' % (args.data, task),
         'train_cut_%d' % args.train_cut,
         'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
-        'n-balls%d_niters%d_lr%f_total_ode_step%d_warmup_epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_energy_lambda%.2f' % (
+        'n-balls%d_niters%d_lr%f_total_ode_step%d_warmup_epoch%d_reverse_f_lambda%.2f_nlayers%d' % (
             args.n_balls, args.niters, args.lr, args.total_ode_step,
-            args.warmup_epoch, args.reverse_f_lambda,
-            args.reverse_gt_lambda,args.energy_lambda)
+            args.warmup_epoch, args.reverse_f_lambda, args.nb_layers)
     ))
 
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder):
@@ -315,12 +313,8 @@ if __name__ == '__main__':
 
 
     for epo in range(1, args.niters + 1):
-        if epo<=args.warmup_epoch:
-            reverse_f_lambda = 0
-            reverse_gt_lambda = 0
-        else:
-            reverse_f_lambda = args.reverse_f_lambda
-            reverse_gt_lambda = args.reverse_gt_lambda
+        reverse_f_lambda = args.reverse_f_lambda
+        reverse_gt_lambda = args.reverse_gt_lambda
         # message_train,train_energy_mse,train_forward_gt_mse,train_reverse_f_mse,train_reverse_gt_mse = train_epoch(epo)
         message_train,train_forward_gt_mse,train_reverse_f_mse = train_epoch(epo)
 

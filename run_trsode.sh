@@ -1,26 +1,25 @@
 #!/bin/bash
-device=5
+device=4
 
 epoch=500
 batch_size=512
 
 #lr
-lr='1e-5'
+lr='1e-4'
 Tmax=500
 eta_min=1e-9
 
-
 #observe ratio
-Observe_ratio=('0.4' '0.6' '0.8' )
+Observe_ratio=('0.4' '0.6' '0.8')
 #'0.4' '0.6' '0.8'
 n_balls=5
 
 #reverse_lambda
 reverse_gt_lambda=0
-reverse_f_lambda=10
+reverse_f_lambda=0.5
 energy_lambda=0
 
-data='charged'  #help="simple_spring,damped_spring,forced_spring,charged,pendulum"
+data='damped_spring'  #help="simple_spring,damped_spring,forced_spring,charged,pendulum"
 test_cut='5000'
 
 # LP args
@@ -36,5 +35,5 @@ train_cut="20000"
 #  done
 for observe_ratio in "${Observe_ratio[@]}"
   do
-    python run_models.py --data $data --n-balls $n_balls --Tmax $Tmax --eta_min $eta_min --lr $lr --energy_lambda $energy_lambda --reverse_gt_lambda $reverse_gt_lambda --reverse_f_lambda $reverse_f_lambda --niters $epoch --train_cut $train_cut --test_cut $test_cut --sample-percent-train $observe_ratio --sample-percent-test $observe_ratio --device $device --batch-size $batch_size
+    python run_models_trsode.py --data $data --n-balls $n_balls --Tmax $Tmax --eta_min $eta_min --lr $lr --energy_lambda $energy_lambda --reverse_gt_lambda $reverse_gt_lambda --reverse_f_lambda $reverse_f_lambda --niters $epoch --train_cut $train_cut --test_cut $test_cut --sample-percent-train $observe_ratio --sample-percent-test $observe_ratio --device $device --batch-size $batch_size
   done

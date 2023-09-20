@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import torch
 # 加载.npy文件
 # data = np.load('/home/zijiehuang/wanjia/LG-ODE/data/spring_external/loc_test_springs_external5.npy')
-data = np.load('/home/zijiehuang/wanjia/LG-ODE/data/damped_spring/loc_train_springs_damped5.npy')
+data = np.load('/home/zijiehuang/wanjia/LG-ODE/data/simple_spring/loc_train_springs5.npy')
 
 
-print('shape : ', data[0].shape)
+print('shape : ', data.shape)
 
 
 # Plot for

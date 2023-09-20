@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 # 加载.npy文件
-loc = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum/loc_train_pendulum3.npy')
-loc_theta = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum/loc_theta_train_pendulum3.npy')
-times=np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum/times_train_pendulum3.npy')
+loc = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/loc_train_pendulum3.npy')
+loc_theta = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/loc_theta_train_pendulum3.npy')
+times=np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/times_train_pendulum3.npy')
 
 print('loc shape:', loc.shape)
 print('times shape:', times.shape)

@@ -82,6 +82,19 @@ class VAE_Baseline(nn.Module):
         log_density_data = compute_mse(pred_y, truth_repeated, mask=mask)
         # shape: [1]
         return torch.mean(log_density_data)
+    def get_mape(self, truth, pred_y, mask=None):
+        # pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
+        # truth shape  [n_traj, n_tp, n_dim]
+        n_traj, n_tp, n_dim = truth.size()
+
+        # Compute likelihood of the data under the predictions
+        truth_repeated = truth.repeat(pred_y.size(0), 1, 1, 1)
+        mask = mask.repeat(pred_y.size(0), 1, 1, 1)
+
+        # Compute likelihood of the data under the predictions
+        log_density_data = compute_mape(pred_y, truth_repeated, mask=mask)
+        # shape: [1]
+        return torch.mean(log_density_data)
 
     def get_energy_mse(self,truth, pred_y,n_ball,temporal_weights,k,mask=None):
         n_traj, n_tp, n_dim = truth.size()
@@ -102,6 +115,17 @@ class VAE_Baseline(nn.Module):
         log_density_data = compute_mse(pred_y_reverse, pred_y, mask=mask)
         # shape: [1]
         return torch.mean(log_density_data)
+
+    def get_f_r_mape(self, pred_y,pred_y_reverse, mask=None):
+        # pred_y_reverse shape [n_traj_samples, n_traj, n_tp, n_dim]
+        # pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
+
+        mask = mask.repeat(pred_y.size(0), 1, 1, 1)
+        # Compute likelihood of the data under the predictions
+        log_density_data = compute_mape(pred_y_reverse, pred_y, mask=mask)
+        # shape: [1]
+        return torch.mean(log_density_data)
+
 
 
 
@@ -145,6 +169,9 @@ class VAE_Baseline(nn.Module):
         Forward_gt_mse = self.get_mse(
             batch_dict_decoder["data"], pred_y,
             mask=batch_dict_decoder["mask"])  # [1]
+        Forward_gt_mape = self.get_mape(
+            batch_dict_decoder["data"], pred_y,
+            mask=batch_dict_decoder["mask"])  # [1]
         ## loss for forward and backward
 
         Reverse_gt_rec_likelihood = self.get_gaussian_likelihood(
@@ -154,12 +181,19 @@ class VAE_Baseline(nn.Module):
         Reverse_gt_mse = self.get_mse(
             batch_dict_decoder["data"], pred_y_reverse,
             mask=batch_dict_decoder["mask"])  # [1]
+        Reverse_gt_mape = self.get_mape(
+            batch_dict_decoder["data"], pred_y_reverse,
+            mask=batch_dict_decoder["mask"])  # [1]
 
         Reverse_f_rec_likelihood = self.get_f_r_gaussian_likelihood(
             pred_y, pred_y_reverse, temporal_weights,
             mask=batch_dict_decoder["mask"])  # negative value
 
         Reverse_f_mse = self.get_f_r_mse(
+            pred_y, pred_y_reverse,
+            mask=batch_dict_decoder["mask"])  # [1]
+
+        Reverse_f_mape = self.get_f_r_mape(
             pred_y, pred_y_reverse,
             mask=batch_dict_decoder["mask"])  # [1]
 
@@ -185,6 +219,10 @@ class VAE_Baseline(nn.Module):
         results["forward_gt_mse"] = torch.mean(Forward_gt_mse).data.item()
         results["reverse_f_mse"] = torch.mean(Reverse_f_mse).data.item()
         results["reverse_gt_mse"] = torch.mean(Reverse_gt_mse).data.item()
+        results["forward_gt_mape"] = torch.mean(Forward_gt_mape).data.item()
+        results["reverse_f_mape"] = torch.mean(Reverse_f_mape).data.item()
+        results["reverse_gt_mape"] = torch.mean(Reverse_gt_mape).data.item()
+
         # results['energy_mse']= torch.mean(energy_mse).data.item()
 
         # results["kl_first_p"] =  torch.mean(kldiv_z0).detach().data.item()

@@ -13,9 +13,9 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('--simulation', type=str, default='pendulum',
                     help='What simulation to generate.')
-parser.add_argument('--num-train', type=int, default=2000,
+parser.add_argument('--num-train', type=int, default=20000,
                     help='Number of training simulations to generate.')
-parser.add_argument('--num-test', type=int, default=500,
+parser.add_argument('--num-test', type=int, default=5000,
                     help='Number of test simulations to generate.')
 parser.add_argument('--ode', type=int, default=6000,
                     help='Length of trajectory.')
@@ -91,7 +91,7 @@ if args.simulation =="pendulum":
     print("Generating {} test simulations".format(args.num_test))
 
     loc_test, vel_test,loc_theta_test, vel_theta_test, edges_test, timestamps_test = generate_dataset_Pendulum(args, args.num_test, isTrain=False)
-    Pendulum_dir=os.path.join('pendulum')
+    Pendulum_dir=os.path.join('pendulum_test')
     Path(Pendulum_dir).mkdir(parents=True, exist_ok=True)
     np.save(os.path.join( Pendulum_dir,'loc_test' + suffix + '.npy'), loc_test)
     np.save(os.path.join( Pendulum_dir,'vel_test' + suffix + '.npy'), vel_test)

@@ -16,8 +16,9 @@ class PendulumSim(object):
         self.noise_var = noise_var
         self.stick_mass = stick_mass
         
-        self._delta_T = 0.0005
+        self._delta_T = 0.0001
         self.g = 9.8
+
 
     def _energy(self, loc, vel):
         # disables division by zero warning, since I fix it with fill_diagonal
@@ -500,8 +501,8 @@ if __name__ == '__main__':
 
 
     t = time.time()
-    T = 20000
-    loc, vel,loc_theta,vel_theta, edges = sim.sample_trajectory(T=T, sample_freq=1)
+    T = 24000
+    loc, vel,loc_theta,vel_theta, edges = sim.sample_trajectory(T=T, sample_freq=400)
     print("Simulation time: {}".format(time.time() - t))
     vel_norm = np.sqrt((vel ** 2).sum(axis=1))
     # plt.figure()

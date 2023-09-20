@@ -17,7 +17,7 @@ parser.add_argument('--num-train', type=int, default=20000,
                     help='Number of training simulations to generate.')
 parser.add_argument('--num-test', type=int, default=5000,
                     help='Number of test simulations to generate.')
-parser.add_argument('--ode', type=int, default=6000,
+parser.add_argument('--ode', type=int, default=10000,
                     help='Length of trajectory.')
 parser.add_argument('--num-test-box', type=int, default=1,
                     help='Length of test set trajectory.')
@@ -38,7 +38,7 @@ args = parser.parse_args()
 
 if args.simulation == 'springs_damped':
     sim = SpringDampedSim(noise_var=0.0, n_balls=args.n_balls)
-    suffix = "_springs_damped"
+    suffix = "_springs_damped_long"
 else:
     raise ValueError('Simulation {} not implemented'.format(args.simulation))
 
@@ -87,7 +87,7 @@ if args.simulation =="springs_damped":
     print("Generating {} test simulations".format(args.num_test))
 
     loc_test, vel_test, edges_test, timestamps_test = generate_dataset_springs_damped(args, args.num_test, isTrain=False)
-    spring_damped_dir=os.path.join('spring_damped')
+    spring_damped_dir=os.path.join('spring_damped_long')
     Path(spring_damped_dir).mkdir(parents=True, exist_ok=True)
     np.save(os.path.join( spring_damped_dir,'loc_test' + suffix + '.npy'), loc_test)
     np.save(os.path.join( spring_damped_dir,'vel_test' + suffix + '.npy'), vel_test)

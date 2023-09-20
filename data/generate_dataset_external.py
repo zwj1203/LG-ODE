@@ -17,7 +17,7 @@ parser.add_argument('--num-train', type=int, default=20000,
                     help='Number of training simulations to generate.')
 parser.add_argument('--num-test', type=int, default=5000,
                     help='Number of test simulations to generate.')
-parser.add_argument('--ode', type=int, default=6000,
+parser.add_argument('--ode', type=int, default=10000,
                     help='Length of trajectory.')
 parser.add_argument('--num-test-box', type=int, default=1,
                     help='Length of test set trajectory.')
@@ -38,7 +38,7 @@ args = parser.parse_args()
 
 if args.simulation == 'springs_external':
     sim = SpringExternalSim(noise_var=0.0, n_balls=args.n_balls)
-    suffix = "_springs_external"
+    suffix = "_springs_external_long"
 else:
     raise ValueError('Simulation {} not implemented'.format(args.simulation))
 
@@ -87,7 +87,7 @@ if args.simulation =="springs_external":
     print("Generating {} test simulations".format(args.num_test))
 
     loc_test, vel_test, edges_test, timestamps_test = generate_dataset_springs_external(args, args.num_test, isTrain=False)
-    spring_external_dir=os.path.join('spring_external')
+    spring_external_dir=os.path.join('spring_external_long')
     Path(spring_external_dir).mkdir(parents=True, exist_ok=True)
     np.save(os.path.join( spring_external_dir,'loc_test' + suffix + '.npy'), loc_test)
     np.save(os.path.join( spring_external_dir,'vel_test' + suffix + '.npy'), vel_test)

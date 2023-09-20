@@ -106,28 +106,32 @@ parser.add_argument('--time_augment', action='store_true', default=False, help='
 parser.add_argument('--nb_units', type=int, default=1000, help='nb_units for ode network')
 parser.add_argument('--nb_layers', type=int, default=1, help='nb_layers for ode network')
 parser.add_argument('--activation', type=str, default='tanh', help='activation for ode network')
-
+parser.add_argument('--name', type=str, default="TRSODE",help="TRSODE" )
 
 args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
 
-if args.data == "spring":
-    # args.dataset = 'wanjia/LG-ODE/data/example_data'
+if args.data == "simple_spring":
     args.suffix = '_springs5'
-    # args.total_ode_step = 60
-if args.data == "spring_external":
-    # args.dataset = 'wanjia/LG-ODE/data/example_data'
+    args.dataset='data/simple_spring'
+
+if args.data == "damped_spring":
+    args.suffix = '_springs_damped5'
+    args.dataset='data/damped_spring'
+
+if args.data == "forced_spring":
     args.suffix = '_springs_external5'
-    # args.total_ode_step = 60
-elif args.data == "charged":
-    # args.dataset = 'wanjia/LG-ODE/data/example_data'
+    args.dataset='data/forced_spring'
+
+if args.data == "charged":
     args.suffix = '_charged5'
-    # args.total_ode_step = 60
-elif args.data == "motion":
-    # args.dataset = 'wanjia/LG-ODE/data/example_data'
-    args.suffix = '_motion'
-    # args.total_ode_step = 49
-    args.n_balls = 31
+    args.dataset='data/charged'
+
+if args.data == "pendulum":
+    args.suffix = '_pendulum3'
+    args.dataset='data/pendulum'
+
+
 
 task = 'extrapolation' if args.extrap == 'True' else 'intrapolation'
 
@@ -206,17 +210,17 @@ if __name__ == '__main__':
     # Training
     # pdb.set_trace()
     # log_dir = os.path.join("./home/zijiehuang/LGODE_logs/", '%s_%s'%(args.data, task))
-    log_dir = os.path.join("/home/zijiehuang", "trsode_logs", '%s_%s' % (args.data, task))
+    log_dir = os.path.join("/home/zijiehuang", "PIGODE_logs", '%s_%d' % (args.data, args.total_ode_step),'%s' %(args.name))
 
     # args.alias + "_" + args.z0_encode./home/zijiehuang/LGODE_logsr + "_" + args.data + "_" + str(
     #     args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
-    logname = 'n-balls%d_niters%d_lr%f-%d-%f_total-ode-step%d_warmup-epoch%d_reverse_f_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f_nlayers%d.log'%(
-                                        args.n_balls, args.niters, args.lr, args.Tmax, args.eta_min, args.total_ode_step,
-                                        args.warmup_epoch, args.reverse_f_lambda, args.train_cut,args.test_cut,
-                                        args.sample_percent_train,args.sample_percent_train, args.nb_layers
-                                    )
+    logname = 'niters%d_lr%f-%d-%f_warmup-epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_traincut%d_testcut%d_observ-ratio_train%.2f_test%.2f.log' % (
+        args.niters, args.lr, args.Tmax, args.eta_min,
+        args.warmup_epoch, args.reverse_f_lambda,
+        args.reverse_gt_lambda, args.train_cut, args.test_cut, args.sample_percent_train, args.sample_percent_test
+    )
     logger = utils.get_logger(logpath=os.path.join(log_dir,logname), filepath=os.path.abspath(__file__))
     logger.info(input_command)
     logger.info(str(args))
@@ -244,12 +248,13 @@ if __name__ == '__main__':
 
     writer = SummaryWriter(log_dir=os.path.join(
         args.tensorboard_dir,
-        '%s_%s' % (args.data, task),
-        'train_cut_%d' % args.train_cut,
+        '%s_%d' % (args.data, args.total_ode_step),
         'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
-        'n-balls%d_niters%d_lr%f_total_ode_step%d_warmup_epoch%d_reverse_f_lambda%.2f_nlayers%d' % (
-            args.n_balls, args.niters, args.lr, args.total_ode_step,
-            args.warmup_epoch, args.reverse_f_lambda, args.nb_layers)
+        'train_cut_%d' % args.train_cut, '%s' % (args.name),
+        'niters%d_lr%f_total_ode_step%d_warmup_epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (
+            args.niters, args.lr, args.total_ode_step,
+            args.warmup_epoch, args.reverse_f_lambda,
+            args.reverse_gt_lambda)
     ))
 
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder):
@@ -313,7 +318,7 @@ if __name__ == '__main__':
 
 
     for epo in range(1, args.niters + 1):
-        reverse_f_lambda = args.reverse_f_lambda
+        reverse_f_lambda = args.reverse_f_lambda*epo
         reverse_gt_lambda = args.reverse_gt_lambda
         # message_train,train_energy_mse,train_forward_gt_mse,train_reverse_f_mse,train_reverse_gt_mse = train_epoch(epo)
         message_train,train_forward_gt_mse,train_reverse_f_mse = train_epoch(epo)

@@ -78,6 +78,8 @@ def masked_gaussian_log_density(mu, data, obsrv_std, mask,temporal_weights=None)
 
 def mse(mu,data):
 	return  (mu - data) ** 2
+def mape(mu,data):
+	return (mu - data) / mu
 
 
 def compute_mse(mu, data, mask):
@@ -86,6 +88,12 @@ def compute_mse(mu, data, mask):
 	assert(data.size()[-1] == n_dims)
 
 	res = compute_masked_likelihood(mu, data, mask, mse)
+	return res
+def compute_mape(mu, data, mask):
+	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
+	assert (data.size()[-1] == n_dims)
+
+	res = compute_masked_likelihood(mu, data, mask, mape)
 	return res
 
 def compute_average_energy(mu,n_ball,k,mask):

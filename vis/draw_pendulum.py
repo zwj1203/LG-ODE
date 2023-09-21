@@ -2,13 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 # 加载.npy文件
-loc = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/loc_train_pendulum3.npy')
-loc_theta = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/loc_theta_train_pendulum3.npy')
-times=np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/times_train_pendulum3.npy')
+loc_pen = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum/loc_train_pendulum3.npy')
 
-print('loc shape:', loc.shape)
-print('times shape:', times.shape)
-print(times)
+loc_penold = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_old2000/loc_train_pendulum3.npy')
+loc_pennew = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_new2000/loc_train_pendulum3.npy')
+
+# loc_theta = np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/loc_theta_train_pendulum3.npy')
+# times=np.load('/home/zijiehuang/wanjia/LG-ODE/data/pendulum_test/times_train_pendulum3.npy')
+
+print('loc_pen shape:', loc_pen.shape)
+
+print('loc_pentest shape:', loc_penold.shape)
+print('loc_pennew shape:', loc_pennew.shape)
+
+# print('times shape:', times.shape)
+# print(times)
 
 
 group_data=loc[0]

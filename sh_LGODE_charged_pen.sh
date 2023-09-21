@@ -1,5 +1,5 @@
 #!/bin/bash
-device=4
+device=2
 
 batch_size=512
 

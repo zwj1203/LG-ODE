@@ -340,59 +340,61 @@ if __name__ == '__main__':
                 best_test_mape=test_res["forward_gt_mape"]
                 message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt mse {:.6f}| Best forward gt mape {:.6f}'.format(epo,
                                                                                                         best_test_mse,best_test_mape)
-
-
-                groundtruth_dir = os.path.join(
-                    args.visdata_dir,
-                    '%s_%d' % (args.data, args.total_ode_step),
-                    'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
-                    'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
-                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda )
-                )
-
-                forward_dir = os.path.join(
-                    args.visdata_dir,
-                    '%s_%d' % (args.data, args.total_ode_step),
-                    'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
-                    'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
-                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda )
-                )
-
-                reverse_dir = os.path.join(
-                    args.visdata_dir,
-                    '%s_%d' % (args.data, args.total_ode_step),
-                    'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
-                    'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
-                    'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda )
-                )
-
-                # Create directories
-                Path(groundtruth_dir).mkdir(parents=True, exist_ok=True)
-                Path(forward_dir).mkdir(parents=True, exist_ok=True)
-                Path(reverse_dir).mkdir(parents=True, exist_ok=True)
-
-                # Save files
-                np.save(os.path.join(groundtruth_dir, 'groundtruth_trajectory.npy'), gt)
-                np.save(os.path.join(forward_dir, 'forward_trajectory.npy'), f)
-                np.save(os.path.join(reverse_dir, 'reverse_trajectory.npy'), r)
-
-
-                logger.info(message_test_best)
-
-            if train_forward_gt_mse < best_train_mse:
-                best_train_mse = train_forward_gt_mse
-                message_train_best = 'Epoch {:04d} [Train seq (cond on sampled tp)] | Best forward gt  mse {:.6f}'.format(
-                    epo,best_train_mse)
-                logger.info(message_train_best)
-
                 ckpt_path = os.path.join(args.save, "experiment_" + str(
-                    experimentID) + "_" + args.z0_encoder + "_" + args.data + "_" + str(
-                    args.sample_percent_train) + "_" + args.mode + "_epoch_" + str(epo) + "_mse_" + str(
-                    best_test_mse) + '.ckpt')
+                    experimentID) + "_"  + args.data + "_" + str(
+                    args.total_ode_step) + "_" + args.name +"_obratio_"+str(args.sample_percent_train)+"_rflambda_"+str(args.reverse_f_lambda)+ "_epoch_" + str(epo) + "_mse_" + str(
+                    best_test_mse) + "_mape_" + str(
+                    best_test_mape) + '.ckpt')
                 torch.save({
                     'args': args,
                     'state_dict': model.state_dict(),
                 }, ckpt_path)
+
+                # groundtruth_dir = os.path.join(
+                #     args.visdata_dir,
+                #     '%s_%d' % (args.data, args.total_ode_step),
+                #     'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+                #     'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
+                #     'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda )
+                # )
+                #
+                # forward_dir = os.path.join(
+                #     args.visdata_dir,
+                #     '%s_%d' % (args.data, args.total_ode_step),
+                #     'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+                #     'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
+                #     'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda )
+                # )
+                #
+                # reverse_dir = os.path.join(
+                #     args.visdata_dir,
+                #     '%s_%d' % (args.data, args.total_ode_step),
+                #     'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+                #     'train_cut%d_test_cut%d' % (args.train_cut, args.test_cut),
+                #     'reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (args.reverse_f_lambda, args.reverse_gt_lambda )
+                # )
+
+                # # Create directories
+                # Path(groundtruth_dir).mkdir(parents=True, exist_ok=True)
+                # Path(forward_dir).mkdir(parents=True, exist_ok=True)
+                # Path(reverse_dir).mkdir(parents=True, exist_ok=True)
+                #
+                # # Save files
+                # np.save(os.path.join(groundtruth_dir, 'groundtruth_trajectory.npy'), gt)
+                # np.save(os.path.join(forward_dir, 'forward_trajectory.npy'), f)
+                # np.save(os.path.join(reverse_dir, 'reverse_trajectory.npy'), r)
+
+
+                logger.info(message_test_best)
+
+
+            if train_forward_gt_mse < best_train_mse:
+                best_train_mse = train_forward_gt_mse
+                message_train_best = 'Epoch {:04d} [Train seq (cond on sampled tp)] | B train forward gt  mse {:.6f}'.format(
+                    epo,best_train_mse)
+                logger.info(message_train_best)
+
+
 
 
             writer.add_scalar('train_MSE/train_forward_gt_mse', train_forward_gt_mse, epo)

@@ -92,7 +92,7 @@ class VAE_Baseline(nn.Module):
         mask = mask.repeat(pred_y.size(0), 1, 1, 1)
 
         # Compute likelihood of the data under the predictions
-        log_density_data = compute_mape(pred_y, truth_repeated, mask=mask)
+        log_density_data = compute_mape(truth_repeated,pred_y, mask=mask)
         # shape: [1]
         return torch.mean(log_density_data)
 
@@ -116,15 +116,6 @@ class VAE_Baseline(nn.Module):
         # shape: [1]
         return torch.mean(log_density_data)
 
-    def get_f_r_mape(self, pred_y,pred_y_reverse, mask=None):
-        # pred_y_reverse shape [n_traj_samples, n_traj, n_tp, n_dim]
-        # pred_y shape [n_traj_samples, n_traj, n_tp, n_dim]
-
-        mask = mask.repeat(pred_y.size(0), 1, 1, 1)
-        # Compute likelihood of the data under the predictions
-        log_density_data = compute_mape(pred_y_reverse, pred_y, mask=mask)
-        # shape: [1]
-        return torch.mean(log_density_data)
 
 
 

@@ -34,10 +34,13 @@ def compute_masked_likelihood(mu, data, mask, likelihood_func,temporal_weights=N
 		weight_for_times = weight_for_times.repeat(n_traj_samples, n_traj, 1, 1)
 		log_prob_masked = torch.sum(log_prob * mask * weight_for_times, dim=2)  # [n_traj, n_traj_samples, n_dims]
 	else:
-		log_prob_masked = torch.sum(log_prob * mask, dim=2)  # [n_traj, n_traj_samples, n_dims]
-		norm_masked = torch.sum(abs(mu) * mask, dim=2)
+		unnormalized_map = log_prob / torch.maximum(1e-9*torch.ones_like(mu), torch.abs(mu))
+		unnormalized_map = torch.sum(unnormalized_map * mask, dim=2)
 
-	unnormalized_map = log_prob_masked / norm_masked
+		log_prob_masked = torch.sum(log_prob * mask, dim=2)  # [n_traj, n_traj_samples, n_dims]
+		# norm_masked = torch.sum(abs(mu) * mask, dim=2)
+
+	# unnormalized_map = log_prob_masked / norm_masked
 
 	timelength_per_nodes = torch.sum(mask.permute(0,1,3,2),dim=3)
 	assert (not torch.isnan(timelength_per_nodes).any())

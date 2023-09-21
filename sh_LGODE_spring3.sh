@@ -1,5 +1,5 @@
 #!/bin/bash
-device=4
+device=1
 
 batch_size=512
 n_balls=5

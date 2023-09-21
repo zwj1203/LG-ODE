@@ -1,32 +1,34 @@
 #!/bin/bash
-device=5
-
-epoch=500
+device=4
 batch_size=512
+n_balls=5
+
+epoch=200
+
 
 #lr
-lr='1e-5'
-Tmax=500
+lr='1e-4'
+Tmax=200
 eta_min=1e-9
 
 
 #observe ratio
 Observe_ratio=('0.4' '0.6' '0.8' )
 #'0.4' '0.6' '0.8'
-n_balls=5
+
 
 #reverse_lambda
 reverse_gt_lambda=0
-reverse_f_lambda=10
+reverse_f_lambda=0.1
 energy_lambda=0
 
-data='charged'  #help="simple_spring,damped_spring,forced_spring,charged,pendulum"
+data='damped_spring'  #help="simple_spring,damped_spring,forced_spring,charged,pendulum"
 test_cut='5000'
 
 # LP args
 train_cut="20000"
 
-
+[]
 #for t in "${train_cut[@]}"
 #  do
 #      for test_or in "${test_observe_ratio[@]}"

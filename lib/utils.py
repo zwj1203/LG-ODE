@@ -188,8 +188,7 @@ def compute_loss_all_batches(model,
 	total["reverse_f_mse"] = 0
 	total["reverse_gt_mse"] = 0
 	total["forward_gt_mape"] = 0
-	total["reverse_f_mape"] = 0
-	total["reverse_gt_mape"] = 0
+
 
 
 

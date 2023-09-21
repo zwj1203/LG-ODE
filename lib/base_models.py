@@ -181,9 +181,7 @@ class VAE_Baseline(nn.Module):
         Reverse_gt_mse = self.get_mse(
             batch_dict_decoder["data"], pred_y_reverse,
             mask=batch_dict_decoder["mask"])  # [1]
-        Reverse_gt_mape = self.get_mape(
-            batch_dict_decoder["data"], pred_y_reverse,
-            mask=batch_dict_decoder["mask"])  # [1]
+
 
         Reverse_f_rec_likelihood = self.get_f_r_gaussian_likelihood(
             pred_y, pred_y_reverse, temporal_weights,
@@ -193,9 +191,6 @@ class VAE_Baseline(nn.Module):
             pred_y, pred_y_reverse,
             mask=batch_dict_decoder["mask"])  # [1]
 
-        Reverse_f_mape = self.get_f_r_mape(
-            pred_y, pred_y_reverse,
-            mask=batch_dict_decoder["mask"])  # [1]
 
 
         # Forward_gt_energy_rec_likelihood=self.get_energy_gaussian_likelihood(batch_dict_decoder["data"], pred_y,n_ball,temporal_weights,k=.1,mask=batch_dict_decoder["mask"])
@@ -220,8 +215,7 @@ class VAE_Baseline(nn.Module):
         results["reverse_f_mse"] = torch.mean(Reverse_f_mse).data.item()
         results["reverse_gt_mse"] = torch.mean(Reverse_gt_mse).data.item()
         results["forward_gt_mape"] = torch.mean(Forward_gt_mape).data.item()
-        results["reverse_f_mape"] = torch.mean(Reverse_f_mape).data.item()
-        results["reverse_gt_mape"] = torch.mean(Reverse_gt_mape).data.item()
+
 
         # results['energy_mse']= torch.mean(energy_mse).data.item()
 

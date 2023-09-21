@@ -63,7 +63,7 @@ parser.add_argument('--device', type=int, default=0, help='running device')
 parser.add_argument('--Tmax', type=float, default=2000, help='optimazor')
 parser.add_argument('--eta_min', type=float, default=0, help='optimazor')
 parser.add_argument('--visdata_dir', type=str, default='visdata', help='vis root directory')
-parser.add_argument('--name', type=str, default="LGODE",help="LGODE,PIGODE")
+parser.add_argument('--name', type=str, default="LGODE",help="LGODE,DCGODE")
 
 
 
@@ -97,7 +97,7 @@ if args.data == "pendulum":
 if args.reverse_f_lambda==0 and args.reverse_gt_lambda==0:
     args.name='LGODE'
 else:
-    args.name = 'PIGODE'
+    args.name = 'DCGODE'
 
 
 task = 'extrapolation' if args.extrap == 'True' else 'intrapolation'
@@ -237,7 +237,7 @@ if __name__ == '__main__':
         torch.cuda.empty_cache()
         # train_res, loss
         # return loss_value, train_res["mse"], train_res["likelihood"],train_res["energy_mse"],train_res["forward_gt_mse"],train_res["reverse_f_mse"],train_res["reverse_gt_mse"]
-        return loss_value, train_res["mse"], train_res["likelihood"],train_res["forward_gt_mse"],train_res["reverse_f_mse"],train_res["reverse_gt_mse"],train_res["forward_gt_mape"],train_res["reverse_f_mape"],train_res["reverse_gt_mape"]
+        return loss_value, train_res["mse"], train_res["likelihood"],train_res["forward_gt_mse"],train_res["reverse_f_mse"],train_res["reverse_gt_mse"],train_res["forward_gt_mape"]
 
 
     def train_epoch(epo):
@@ -248,8 +248,6 @@ if __name__ == '__main__':
         reverse_f_mse_list = []
         reverse_gt_mse_list = []
         forward_gt_mape_list = []
-        reverse_f_mape_list = []
-        reverse_gt_mape_list = []
         likelihood_list = []
         # energy_mse_list=[]
         kl_first_p_list = []
@@ -265,7 +263,7 @@ if __name__ == '__main__':
 
             batch_dict_decoder = utils.get_next_batch(train_decoder, device)
 
-            loss, mse, likelihood,forward_gt_mse,reverse_f_mse,reverse_gt_mse,forward_gt_mape,reverse_f_mape,reverse_gt_mape = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,energy_lambda,
+            loss, mse, likelihood,forward_gt_mse,reverse_f_mse,reverse_gt_mse,forward_gt_mape = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,energy_lambda,
                                                        reverse_f_lambda,reverse_gt_lambda)
 
 
@@ -274,7 +272,7 @@ if __name__ == '__main__':
             loss_list.append(loss), mse_list.append(mse), likelihood_list.append(
                 likelihood),  forward_gt_mse_list.append(
                 forward_gt_mse), reverse_f_mse_list.append(reverse_f_mse), reverse_gt_mse_list.append(reverse_gt_mse),forward_gt_mape_list.append(
-                forward_gt_mape), reverse_f_mape_list.append(reverse_f_mape), reverse_gt_mape_list.append(reverse_gt_mape)
+                forward_gt_mape)
             #
             del batch_dict_encoder, batch_dict_graph, batch_dict_decoder
             # train_res, loss
@@ -287,10 +285,10 @@ if __name__ == '__main__':
         #     np.mean(loss_list),np.mean(energy_mse_list),
         #     np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list))
 
-        message_train = 'Epoch {:04d} | [Train seq (cond on sampled tp)] | Loss {:.6f} |  Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f} | Forward gt MAPE {:.6f} | Reverse f MAPE {:.6f} | Reverse gt MAPE {:.6f}'.format(
+        message_train = 'Epoch {:04d} | [Train seq (cond on sampled tp)] | Loss {:.6f} |  Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f} | Forward gt MAPE {:.6f} '.format(
             epo,
             np.mean(loss_list),
-            np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list),np.mean(forward_gt_mape_list), np.mean(reverse_f_mape_list),np.mean(reverse_gt_mape_list))
+            np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list),np.mean(forward_gt_mape_list))
 
 
 
@@ -324,10 +322,10 @@ if __name__ == '__main__':
             # pdb.set_trace()
 
 
-            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}| Forward gt MAPE {:.6f} | Reverse f MAPE {:.6f} | Reverse gt MAPE {:.6f}'.format(
+            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}| Forward gt MAPE {:.6f}'.format(
                 epo,  reverse_f_lambda, reverse_gt_lambda,
                 test_res["loss"],
-                test_res["forward_gt_mse"], test_res["reverse_f_mse"], test_res["reverse_gt_mse"],test_res["forward_gt_mape"], test_res["reverse_f_mape"], test_res["reverse_gt_mape"])
+                test_res["forward_gt_mse"], test_res["reverse_f_mse"], test_res["reverse_gt_mse"],test_res["forward_gt_mape"])
 
             logger.info("Experiment " + str(experimentID))
             logger.info(message_train)

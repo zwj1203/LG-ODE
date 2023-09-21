@@ -35,7 +35,7 @@ def compute_masked_likelihood(mu, data, mask, likelihood_func,temporal_weights=N
 		log_prob_masked = torch.sum(log_prob * mask * weight_for_times, dim=2)  # [n_traj, n_traj_samples, n_dims]
 	else:
 		log_prob_masked = torch.sum(log_prob * mask, dim=2)  # [n_traj, n_traj_samples, n_dims]
-		norm_masked = torch.sum(mu * mask, dim=2)
+		norm_masked = torch.sum(abs(mu) * mask, dim=2)
 
 	unnormalized_map = log_prob_masked / norm_masked
 

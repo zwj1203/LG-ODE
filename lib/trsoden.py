@@ -217,16 +217,27 @@ class ODENetwork(nn.Module):
                 mask = batch_dec["mask"][:, 1:, :]
                 batch_dec["data"] = batch_dec["data"][:, 1:, :]
              
-            X = torch.cat([Xq, Xp], dim=2)
+            # X = torch.cat([Xq, Xp], dim=2)
+            timelength_per_nodes = torch.sum(mask.permute(0,2,1),dim=2)
+
             # mask = mask.reshape(b, self.nb_object, T, -1).permute(0,2,1,3).reshape(b, T, -1)
             # pdb.set_trace()
             forward_diff = torch.square(torch.cat([Xq, Xp], dim=2) - batch_dec["data"]) * mask
+            forward_diff = forward_diff.sum(dim=1) / timelength_per_nodes
             l_ode = torch.mean(forward_diff)
 
             fr_diff = torch.square(torch.cat([Xq, -Xp], dim=2) - torch.cat([Xrq, Xrp], dim=2)) * mask
+            fr_diff = fr_diff.sum(dim=1) / timelength_per_nodes
             l_trs = torch.mean(fr_diff)
 
             l = l_ode + self.lambda_trs * l_trs
+            
+            #sum over time dim
+            forward_mape = torch.sum(torch.abs(torch.cat([Xq, Xp], dim=2) - batch_dec["data"]) * mask, dim=1)
+            # pdb.set_trace()
+            forward_mape = forward_mape / torch.sum(torch.abs(batch_dec["data"]) * mask, dim=1)
+            forward_mape = forward_mape / timelength_per_nodes
+            forward_mape = torch.mean(forward_mape)
         else:
             raise NotImplementedError
 
@@ -235,6 +246,8 @@ class ODENetwork(nn.Module):
         results["mse"] = l_ode.data.item() + l_trs.data.item()
         results["forward_gt_mse"] = l_ode.data.item()
         results["reverse_f_mse"] = l_trs.data.item()
+        results["mape"] = forward_mape.data.item()
+
         return results
 
         

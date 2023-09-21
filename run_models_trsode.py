@@ -20,7 +20,7 @@ def compute_loss_all_batches(model, encoder, decoder, n_batches, device):
 	total = {}
 	total["loss"] = 0
 	total["mse"] = 0
-	# total["energy_mse"] = 0
+	total["mape"] = 0
 	total["forward_gt_mse"] = 0
 	total["reverse_f_mse"] = 0
 
@@ -329,10 +329,12 @@ if __name__ == '__main__':
             test_res= compute_loss_all_batches(model, test_encoder, test_decoder,
                                                 n_batches=test_batch, device=device)
 
-            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f}'.format(
+            message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Forward gt MAPE {:.6f} |Reverse f MSE {:.6f}'.format(
                 epo, reverse_f_lambda,
                 test_res["loss"],
-                test_res["forward_gt_mse"], test_res["reverse_f_mse"])
+                test_res["forward_gt_mse"], 
+                test_res["mape"], 
+                test_res["reverse_f_mse"])
 
             logger.info("Experiment " + str(experimentID))
             logger.info(message_train)
@@ -344,8 +346,8 @@ if __name__ == '__main__':
 
             if test_res["forward_gt_mse"] < best_test_mse:
                 best_test_mse = test_res["forward_gt_mse"]
-                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}'.format(epo,
-                                                                                                        best_test_mse)
+                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}| Best epoch mape {:.6f}'.format(epo,
+                                                                                                        best_test_mse, test_res["mape"])
                 groundtruth_dir = os.path.join(
                     args.visdata_dir,
                     '%s_%s' % (args.data, task),

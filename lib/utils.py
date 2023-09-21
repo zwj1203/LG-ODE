@@ -198,6 +198,9 @@ def compute_loss_all_batches(model,
 	model.eval()
 	print("Computing loss... ")
 	with torch.no_grad():
+		GT = []
+		F =  []
+		R = []
 		for i in tqdm(range(n_batches)):
 			batch_dict_encoder = get_next_batch_new(encoder, device)
 			batch_dict_graph = get_next_batch_new(graph, device)
@@ -214,15 +217,22 @@ def compute_loss_all_batches(model,
 					total[key] += var
 
 			n_test_batches += 1
+			GT.append(gt)
+			F.append(f)
+			R.append(r)
 
 			del batch_dict_encoder,batch_dict_graph,batch_dict_decoder,results
+
+
 
 		if n_test_batches > 0:
 			for key, value in total.items():
 				total[key] = total[key] / n_test_batches
+	GT = np.array([item for sublist in GT for item in sublist])
+	F = np.array([item for sublist in F for item in sublist])
+	R = np.array([item for sublist in R for item in sublist])
 
-
-	return total,gt,f, r
+	return total,GT,F, R
 
 
 

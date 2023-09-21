@@ -13,6 +13,7 @@ from lib.create_latent_ode_model import create_LatentODE_model
 from lib.utils import compute_loss_all_batches
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
+import pdb
 
 # Generative model for noisy data based on ODE
 parser = argparse.ArgumentParser('Latent ODE')
@@ -49,8 +50,8 @@ parser.add_argument('--cutting_edge', type=bool, default=True, help='True/False'
 parser.add_argument('--extrap_num', type=int, default=40, help='extrap num ')
 parser.add_argument('--rec_attention', type=str, default="attention")
 parser.add_argument('--alias', type=str, default="run")
-parser.add_argument('--train_cut', type=int, default=20, help='maximum number of train samples')
-parser.add_argument('--test_cut', type=int, default=5, help='maximum number of test samples')
+parser.add_argument('--train_cut', type=int, default=1000, help='maximum number of train samples')
+parser.add_argument('--test_cut', type=int, default=1000, help='maximum number of test samples')
 parser.add_argument('--total_ode_step', type=int, default=60, help='total number of ode steps')
 parser.add_argument('--dataset', type=str, default='data', help='dataset directory')
 parser.add_argument('--tensorboard_dir', type=str, default='tensorboards', help='tensorboard root directory')
@@ -258,14 +259,6 @@ if __name__ == '__main__':
 
         for itr in tqdm(range(train_batch)):
 
-            # utils.update_learning_rate(optimizer, decay_rate=0.999, lowest=args.lr / 10)
-            wait_until_kl_inc = 10
-
-            # if itr < wait_until_kl_inc:
-            #     kl_coef = 0.
-            # else:
-            #     kl_coef = (1 - 0.99 ** (itr - wait_until_kl_inc))
-
             batch_dict_encoder = utils.get_next_batch_new(train_encoder, device)
 
             batch_dict_graph = utils.get_next_batch_new(train_graph, device)
@@ -275,17 +268,9 @@ if __name__ == '__main__':
             loss, mse, likelihood,forward_gt_mse,reverse_f_mse,reverse_gt_mse,forward_gt_mape,reverse_f_mape,reverse_gt_mape = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph,energy_lambda,
                                                        reverse_f_lambda,reverse_gt_lambda)
 
-            # loss, mse, likelihood, energy_mse, forward_gt_mse, reverse_f_mse, reverse_gt_mse = train_single_batch(model,
-            #                                                                                                       batch_dict_encoder,
-            #                                                                                                       batch_dict_decoder,
-            #                                                                                                       batch_dict_graph,
-            #                                                                                                       energy_lambda,
-            #                                                                                                       reverse_f_lambda,
-            #                                                                                                       reverse_gt_lambda)
+
 
             # saving results
-            # loss_list.append(loss), mse_list.append(mse), likelihood_list.append(
-            #     likelihood),energy_mse_list.append(energy_mse),forward_gt_mse_list.append(forward_gt_mse),reverse_f_mse_list.append(reverse_f_mse),reverse_gt_mse_list.append(reverse_gt_mse)
             loss_list.append(loss), mse_list.append(mse), likelihood_list.append(
                 likelihood),  forward_gt_mse_list.append(
                 forward_gt_mse), reverse_f_mse_list.append(reverse_f_mse), reverse_gt_mse_list.append(reverse_gt_mse),forward_gt_mape_list.append(
@@ -336,11 +321,8 @@ if __name__ == '__main__':
             test_res,gt,f, r = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
                                                 n_batches=test_batch, device=device,
                                                 n_traj_samples=3, energy_lambda=energy_lambda,reverse_f_lambda= reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
+            # pdb.set_trace()
 
-            # message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | energy_lambda {:.4f} | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Energy MSE {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}'.format(
-            #     epo, energy_lambda ,reverse_f_lambda,reverse_gt_lambda,
-            #     test_res["loss"],test_res["energy_mse"],
-            #     test_res["forward_gt_mse"], test_res["reverse_f_mse"],test_res["reverse_gt_mse"])
 
             message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | r_gt_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}| Forward gt MAPE {:.6f} | Reverse f MAPE {:.6f} | Reverse gt MAPE {:.6f}'.format(
                 epo,  reverse_f_lambda, reverse_gt_lambda,
@@ -359,6 +341,8 @@ if __name__ == '__main__':
                 best_test_mse = test_res["forward_gt_mse"]
                 message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}'.format(epo,
                                                                                                         best_test_mse)
+
+
                 groundtruth_dir = os.path.join(
                     args.visdata_dir,
                     '%s_%d' % (args.data, args.total_ode_step),
@@ -389,9 +373,9 @@ if __name__ == '__main__':
                 Path(reverse_dir).mkdir(parents=True, exist_ok=True)
 
                 # Save files
-                np.save(os.path.join(groundtruth_dir, 'groundtruth_trajectory.npy'), gt.cpu().detach().numpy())
-                np.save(os.path.join(forward_dir, 'forward_trajectory.npy'), f.cpu().detach().numpy())
-                np.save(os.path.join(reverse_dir, 'reverse_trajectory.npy'), r.cpu().detach().numpy())
+                np.save(os.path.join(groundtruth_dir, 'groundtruth_trajectory.npy'), gt)
+                np.save(os.path.join(forward_dir, 'forward_trajectory.npy'), f)
+                np.save(os.path.join(reverse_dir, 'reverse_trajectory.npy'), r)
 
 
                 logger.info(message_test_best)

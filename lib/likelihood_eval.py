@@ -35,15 +35,25 @@ def compute_masked_likelihood(mu, data, mask, likelihood_func,temporal_weights=N
 		log_prob_masked = torch.sum(log_prob * mask * weight_for_times, dim=2)  # [n_traj, n_traj_samples, n_dims]
 	else:
 		log_prob_masked = torch.sum(log_prob * mask, dim=2)  # [n_traj, n_traj_samples, n_dims]
+		norm_masked = torch.sum(mu * mask, dim=2)
 
+	unnormalized_map = log_prob_masked / norm_masked
 
 	timelength_per_nodes = torch.sum(mask.permute(0,1,3,2),dim=3)
 	assert (not torch.isnan(timelength_per_nodes).any())
-	log_prob_masked_normalized = torch.div(log_prob_masked , timelength_per_nodes) #【n_traj_sample, n_traj, feature], average each feature by dividing time length
+	mse_log_prob_masked_normalized = torch.div(log_prob_masked , timelength_per_nodes) #【n_traj_sample, n_traj, feature], average each feature by dividing time length
 	# Take mean over the number of dimensions
-	res = torch.mean(log_prob_masked_normalized, -1) # 【n_traj_sample, n_traj], average among features.
-	res = res.transpose(0,1)
-	return res
+	res_mse = torch.mean(mse_log_prob_masked_normalized, -1) # 【n_traj_sample, n_traj], average among features.
+	res_mse = res_mse.transpose(0,1)
+
+	mape_log_prob_masked_normalized = torch.div(unnormalized_map ,
+										   timelength_per_nodes)  # 【n_traj_sample, n_traj, feature], average each feature by dividing time length
+	# Take mean over the number of dimensions
+	res_mape = torch.mean(mape_log_prob_masked_normalized, -1)  # 【n_traj_sample, n_traj], average among features.
+	res_mape = res_mse.transpose(0, 1)
+
+
+	return res_mse,res_mape
 
 
 def compute_masked_likelihood_old(mu, data, mask, likelihood_func):
@@ -72,14 +82,14 @@ def masked_gaussian_log_density(mu, data, obsrv_std, mask,temporal_weights=None)
 
 	# Shape after permutation: [n_traj, n_traj_samples, n_timepoints, n_dims]
 	func = lambda mu, data: gaussian_log_likelihood(mu, data, obsrv_std = obsrv_std)
-	res = compute_masked_likelihood(mu, data,mask, func,temporal_weights)
+	res,_ = compute_masked_likelihood(mu, data,mask, func,temporal_weights)
 	return res
 
 
 def mse(mu,data):
 	return  (mu - data) ** 2
 def mape(mu,data):
-	return (mu - data) / mu
+	return abs(mu - data)
 
 
 def compute_mse(mu, data, mask):
@@ -87,13 +97,13 @@ def compute_mse(mu, data, mask):
 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
 	assert(data.size()[-1] == n_dims)
 
-	res = compute_masked_likelihood(mu, data, mask, mse)
+	res ,_= compute_masked_likelihood(mu, data, mask, mse)
 	return res
 def compute_mape(mu, data, mask):
 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
 	assert (data.size()[-1] == n_dims)
 
-	res = compute_masked_likelihood(mu, data, mask, mape)
+	_,res = compute_masked_likelihood(mu, data, mask, mape)
 	return res
 
 def compute_average_energy(mu,n_ball,k,mask):

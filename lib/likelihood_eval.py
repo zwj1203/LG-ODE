@@ -50,7 +50,7 @@ def compute_masked_likelihood(mu, data, mask, likelihood_func,temporal_weights=N
 										   timelength_per_nodes)  # 【n_traj_sample, n_traj, feature], average each feature by dividing time length
 	# Take mean over the number of dimensions
 	res_mape = torch.mean(mape_log_prob_masked_normalized, -1)  # 【n_traj_sample, n_traj], average among features.
-	res_mape = res_mse.transpose(0, 1)
+	res_mape = res_mape.transpose(0, 1)
 
 
 	return res_mse,res_mape

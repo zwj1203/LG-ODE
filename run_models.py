@@ -173,7 +173,7 @@ if __name__ == '__main__':
     # Training
 
     # log_dir = os.path.join("./home/zijiehuang/LGODE_logs/", '%s_%s'%(args.data, task))
-    log_dir = os.path.join("/home/zijiehuang", "PIGODE_logs", '%s_%d' % (args.data, args.total_ode_step),'%s' %(args.name))
+    log_dir = os.path.join("/home/zijiehuang", "PIGODE_logs", '%s_%d_%s' % (args.data, args.total_ode_step, args.name))
 
     # args.alias + "_" + args.z0_encode./home/zijiehuang/LGODE_logsr + "_" + args.data + "_" + str(
     #     args.sample_percent_train) + "_" + args.mode + "_" + str(experimentID) + ".log"
@@ -212,12 +212,12 @@ if __name__ == '__main__':
 
     writer = SummaryWriter(log_dir=os.path.join(
         args.tensorboard_dir,
-        '%s_%d' % (args.data, args.total_ode_step),
-        'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),'train_cut_%d' % args.train_cut,'%s' %(args.name),
-        'niters%d_lr%f_total_ode_step%d_warmup_epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f' % (
-            args.niters, args.lr, args.total_ode_step,
+        '%s_%d_%s' % (args.data, args.total_ode_step,args.name),
+        'observe_ratio_train%.2f_test%.2f' % (args.sample_percent_train, args.sample_percent_test),
+        'niters%d_lr%f-%d-%f_warmup_epoch%d_reverse_f_lambda%.2f_reverse_gt_lambda%.2f_traincut%d_testcut%d' % (
+            args.niters, args.lr, args.Tmax, args.eta_min,
             args.warmup_epoch, args.reverse_f_lambda,
-            args.reverse_gt_lambda)
+            args.reverse_gt_lambda,args.sample_percent_train,args.sample_percent_test)
     ))
     def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph, energy_lambda ,reverse_f_lambda,reverse_gt_lambda):
 
@@ -337,8 +337,9 @@ if __name__ == '__main__':
 
             if test_res["forward_gt_mse"] < best_test_mse:
                 best_test_mse = test_res["forward_gt_mse"]
-                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt  mse {:.6f}'.format(epo,
-                                                                                                        best_test_mse)
+                best_test_mape=test_res["forward_gt_mape"]
+                message_test_best = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Best forward gt mse {:.6f}| Best forward gt mape {:.6f}'.format(epo,
+                                                                                                        best_test_mse,best_test_mape)
 
 
                 groundtruth_dir = os.path.join(

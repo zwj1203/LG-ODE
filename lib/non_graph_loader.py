@@ -91,6 +91,17 @@ class ParseData(object):
         encoder_data_loader = Loader(series_list_en, batch_size=self.batch_size * self.num_atoms, shuffle=False,
                                      collate_fn=lambda batch: self.collate_encoder_batch(batch))  # num_graph*num_ball [tt,vals,masks]
 
+                # Graph Dataloader --USING NRI
+        edges = np.reshape(edges, [-1, self.num_atoms ** 2])
+        edges = np.array((edges + 1) / 2, dtype=np.int64)
+        edges = torch.LongTensor(edges)
+        # Exclude self edges
+        off_diag_idx = np.ravel_multi_index(
+            np.where(np.ones((self.num_atoms, self.num_atoms)) - np.eye(self.num_atoms)),
+            [self.num_atoms, self.num_atoms])
+
+        edges = edges[:, off_diag_idx]
+        graph_data_loader = Loader(edges, batch_size=self.batch_size)
 
         # Decoder Dataloader
         if self.mode == "extrap":
@@ -104,10 +115,10 @@ class ParseData(object):
 
         num_batch = len(decoder_data_loader)
         encoder_data_loader = utils.inf_generator(encoder_data_loader)
-        # graph_data_loader = utils.inf_generator(graph_data_loader)
+        graph_data_loader = utils.inf_generator(graph_data_loader)
         decoder_data_loader = utils.inf_generator(decoder_data_loader)
 
-        return encoder_data_loader, decoder_data_loader, None, num_batch
+        return encoder_data_loader, decoder_data_loader, graph_data_loader, num_batch
 
 
 
@@ -186,9 +197,6 @@ class ParseData(object):
                 loc_list.append(loc[i][j][1:])  # [2500] num_train * num_ball
                 vel_list.append(vel[i][j][1:])
                 times_list.append(times[i][j][1:])
-
-
-
 
         series_list = []
         odernn_list = []
@@ -301,6 +309,8 @@ class ParseData(object):
             }
         return data_dict
 
+
+    
     def variable_time_collate_fn_activity(self,batch):
         """
         Expects a batch of time series data in the form of (record_id, tt, vals, mask, labels) where

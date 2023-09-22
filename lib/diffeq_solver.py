@@ -256,6 +256,43 @@ class DiffeqSolver(nn.Module):
 #
 
 
+class GraphODEFuncT(nn.Module):
+    def __init__(self, ode_func_net):
+        """
+        input_dim: dimensionality of the input
+        latent_dim: dimensionality used for ODE. Analog of a continous latent state
+        """
+        super(GraphODEFuncT, self).__init__()
+
+        self.ode_func_net = ode_func_net  #input: x, edge_index
+        self.nfe = 0
+
+
+    def forward(self, z, t_local, backwards = False):
+        """
+        Perform one step in solving ODE. Given current data point y and current time point t_local, returns gradient dy/dt at this time point
+
+        t_local: current time point
+        y: value at the current time point
+        """
+        self.nfe += 1
+        #print(self.nfe)
+        grad = self.ode_func_net(z)
+
+
+        if backwards:
+            grad = -grad
+        return grad
+
+    def set_graph(self, rec_type,rel_rec,rel_send,edge_types):
+        #print(self.nfe)
+        for layer in self.ode_func_net.gcs:
+            layer.base_conv.rel_type = rec_type
+            layer.base_conv.rel_rec = rel_rec
+            layer.base_conv.rel_send = rel_send
+            layer.base_conv.edge_types = edge_types
+        self.nfe = 0
+
 
 class GraphODEFunc(nn.Module):
     def __init__(self, ode_func_net,  device = torch.device("cpu")):

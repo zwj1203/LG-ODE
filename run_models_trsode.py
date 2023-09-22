@@ -15,43 +15,63 @@ from pathlib import Path
 import pdb
 
 
-def compute_loss_all_batches(model, encoder, decoder, n_batches, device):
+def compute_loss_all_batches(model, encoder, graph, decoder, n_batches, device, function_type):
 
-	total = {}
-	total["loss"] = 0
-	total["mse"] = 0
-	total["mape"] = 0
-	total["forward_gt_mse"] = 0
-	total["reverse_f_mse"] = 0
+    total = {}
+    total["loss"] = 0
+    total["mse"] = 0
+    total["mape"] = 0
+    total["forward_gt_mse"] = 0
+    total["reverse_f_mse"] = 0
 
-	n_test_batches = 0
+    n_test_batches = 0
 
-	model.eval()
-	print("Computing loss... ")
-	with torch.no_grad():
-		for i in tqdm(range(n_batches)):
-			batch_dict_encoder = utils.get_next_batch(encoder, device)
-			batch_dict_decoder = utils.get_next_batch(decoder, device)
+    model.eval()
+    print("Computing loss... ")
+    if function_type == 'hamiltonian':
+        for i in tqdm(range(n_batches)):
+            batch_dict_encoder = utils.get_next_batch(encoder, device)
+            batch_dict_decoder = utils.get_next_batch(decoder, device)
+            batch_dict_graph = utils.get_next_batch_new(graph, device)
+                
+            results = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
 
-			results = model.compute_loss(batch_dict_encoder, batch_dict_decoder)
+            for key in total.keys():
+                if key in results:
+                    var = results[key]
+                    if isinstance(var, torch.Tensor):
+                        var = var.detach().item()
+                    total[key] += var
 
-			for key in total.keys():
-				if key in results:
-					var = results[key]
-					if isinstance(var, torch.Tensor):
-						var = var.detach().item()
-					total[key] += var
+            n_test_batches += 1
 
-			n_test_batches += 1
+            del batch_dict_encoder,batch_dict_decoder,results
+    else:
+        with torch.no_grad():
+            for i in tqdm(range(n_batches)):
+                batch_dict_encoder = utils.get_next_batch(encoder, device)
+                batch_dict_decoder = utils.get_next_batch(decoder, device)
+                batch_dict_graph = utils.get_next_batch_new(graph, device)
+                    
+                results = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
 
-			del batch_dict_encoder,batch_dict_decoder,results
+                for key in total.keys():
+                    if key in results:
+                        var = results[key]
+                        if isinstance(var, torch.Tensor):
+                            var = var.detach().item()
+                        total[key] += var
 
-		if n_test_batches > 0:
-			for key, value in total.items():
-				total[key] = total[key] / n_test_batches
+                n_test_batches += 1
+
+                del batch_dict_encoder,batch_dict_decoder,results
+
+    if n_test_batches > 0:
+        for key, value in total.items():
+            total[key] = total[key] / n_test_batches
 
 
-	return total
+    return total
 
 # Generative model for noisy data based on ODE
 parser = argparse.ArgumentParser('Latent ODE')
@@ -77,7 +97,7 @@ parser.add_argument('--extrap', type=str, default="True",
 parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate (1 - keep probability).')
 parser.add_argument('--sample-percent-train', type=float, default=0.6, help='Percentage of training observtaion data')
 parser.add_argument('--sample-percent-test', type=float, default=0.6, help='Percentage of testing observtaion data')
-parser.add_argument('--augment_dim', type=int, default=64, help='augmented dimension')
+parser.add_argument('--augment_dim', type=int, default=0, help='augmented dimension')
 parser.add_argument('--edge_types', type=int, default=2, help='edge number in NRI')
 parser.add_argument('--odenet', type=str, default="NRI", help='NRI')
 parser.add_argument('--solver', type=str, default="rk4", help='dopri5,rk4,euler')
@@ -196,7 +216,8 @@ if __name__ == '__main__':
     model = ODENetwork(nb_object=args.n_balls, lambda_trs=args.reverse_f_lambda,
                        learning_rate=args.lr, function_type=args.function_type, 
                        time_augment=args.time_augment, nb_units=args.nb_units, 
-                       nb_layers=args.nb_layers, activation=args.activation
+                       nb_layers=args.nb_layers, activation=args.activation, args=args, 
+                       device=device
                        ).to(device)
 
     ##################################################################
@@ -257,10 +278,10 @@ if __name__ == '__main__':
             args.reverse_gt_lambda)
     ))
 
-    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder):
+    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph=None):
 
         optimizer.zero_grad()
-        train_res = model.compute_loss(batch_dict_encoder, batch_dict_decoder)
+        train_res = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
 
         loss = train_res["loss"]
         loss.backward()
@@ -295,7 +316,11 @@ if __name__ == '__main__':
             batch_dict_encoder = utils.get_next_batch(train_encoder, device)
             batch_dict_decoder = utils.get_next_batch(train_decoder, device)
 
-            loss, mse, forward_gt_mse,reverse_f_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder)
+            batch_dict_graph = None
+            if args.function_type:
+                 batch_dict_graph = utils.get_next_batch_new(train_graph, device)
+
+            loss, mse, forward_gt_mse,reverse_f_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
 
             loss_list.append(loss), mse_list.append(mse), forward_gt_mse_list.append(
                 forward_gt_mse), reverse_f_mse_list.append(reverse_f_mse)
@@ -326,8 +351,9 @@ if __name__ == '__main__':
         if epo % n_iters_to_viz == 0:
             model.eval()
 
-            test_res= compute_loss_all_batches(model, test_encoder, test_decoder,
-                                                n_batches=test_batch, device=device)
+            test_res= compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
+                                                n_batches=test_batch, device=device, 
+                                                function_type=args.function_type)
 
             message_test = 'Epoch {:04d} [Test seq (cond on sampled tp)] | r_f_lambda {:.4f} | Loss {:.6f} | Forward gt MSE {:.6f} | Forward gt MAPE {:.6f} |Reverse f MSE {:.6f}'.format(
                 epo, reverse_f_lambda,

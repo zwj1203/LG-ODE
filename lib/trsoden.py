@@ -233,9 +233,10 @@ class ODENetwork(nn.Module):
             l = l_ode + self.lambda_trs * l_trs
             
             #sum over time dim
-            forward_mape = torch.sum(torch.abs(torch.cat([Xq, Xp], dim=2) - batch_dec["data"]) * mask, dim=1)
+            forward_mape = torch.abs(torch.cat([Xq, Xp], dim=2) - batch_dec["data"]) / torch.maximum(1e-9*torch.ones_like(batch_dec["data"]), torch.abs(batch_dec["data"])) 
+            forward_mape = torch.sum(forward_mape * mask, dim=1)
             # pdb.set_trace()
-            forward_mape = forward_mape / torch.sum(torch.abs(batch_dec["data"]) * mask, dim=1)
+            # forward_mape = forward_mape / torch.sum(torch.abs(batch_dec["data"]) * mask, dim=1)
             forward_mape = forward_mape / timelength_per_nodes
             forward_mape = torch.mean(forward_mape)
         else:

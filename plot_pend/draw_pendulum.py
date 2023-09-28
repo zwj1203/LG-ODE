@@ -17,6 +17,58 @@ plt.rcParams['figure.dpi'] = paint_res
 plt.rcParams.update({'figure.autolayout': True})
 
 
+def _energy_theta(loc, vel):
+    g = 9.8
+    stick_length = 1.0
+    stick_mass = 1.0
+    # disables division by zero warning, since I fix it with fill_diagonal
+    with np.errstate(divide='ignore'):
+        U = -stick_mass * stick_length * g / 2 * (5 * np.cos(loc[0]) + 3 * np.cos(loc[1]) + 1 * np.cos(loc[2]))
+        K = stick_mass * stick_length * stick_length / 6 * (9 * vel[1] * vel[0] * np.cos(loc[0] - loc[1]) + 3 * vel[2] * vel[0] * np.cos(loc[0] - loc[2]) +
+                                                            3 * vel[2] * vel[1] * np.cos(loc[1] - loc[2]) + 7 * vel[0] * vel[0] + 4 * vel[1] * vel[1] + 1 * vel[2] * vel[2])
+
+        print('U: ', U)
+        print('K: ', K)
+        print('energy:', U + K)
+
+        return U + K, U, K
+
+
+def _energy(linear_loc, linear_vel):
+    # assume input linear_loc and linear_vel are [3,2] np array (de-normalized)
+    # convert to loc (in theta) and vel (in theta)
+    rod1_vec = linear_loc[0]
+    rod2_vec = linear_loc[1] - linear_loc[0]
+    rod3_vec = linear_loc[2] - linear_loc[1]
+    rod1_len = np.linalg.norm(rod1_vec)
+    rod2_len = np.linalg.norm(rod2_vec)
+    rod3_len = np.linalg.norm(rod3_vec)
+    sin_theta1 = rod1_vec[0] / rod1_len
+    cos_theta1 = -rod1_vec[1] / rod1_len
+    sin_theta2 = rod2_vec[0] / rod2_len
+    cos_theta2 = -rod2_vec[1] / rod2_len
+    sin_theta3 = rod3_vec[0] / rod3_len
+    cos_theta3 = -rod3_vec[1] / rod3_len
+    ang_vel1 = (linear_vel[0, 0] * cos_theta1 + linear_vel[0, 1] * sin_theta1) / rod1_len
+    ang_vel2 = ((linear_vel[1, 0] - linear_vel[0, 0]) * cos_theta2 + (linear_vel[1, 1] - linear_vel[0, 1]) * sin_theta2) / rod2_len
+    ang_vel3 = ((linear_vel[2, 0] - linear_vel[1, 0]) * cos_theta3 + (linear_vel[2, 1] - linear_vel[1, 1]) * sin_theta3) / rod3_len
+    g = 9.8
+    stick_length = 1.0
+    stick_mass = 1.0
+    # disables division by zero warning, since I fix it with fill_diagonal
+    with np.errstate(divide='ignore'):
+        U = -stick_mass * stick_length * g / 2 * (5 * cos_theta1 + 3 * cos_theta2 + 1 * cos_theta3)
+        K = stick_mass * stick_length * stick_length / 6 * (9 * ang_vel2 * ang_vel1 * (cos_theta1 * cos_theta2 + sin_theta1 * sin_theta2) + 3 * ang_vel3 * ang_vel1 *
+                                                            (cos_theta1 * cos_theta3 + sin_theta1 * sin_theta3) + 3 * ang_vel3 * ang_vel2 *
+                                                            (cos_theta2 * cos_theta3 + sin_theta2 * sin_theta3) + 7 * ang_vel1 * ang_vel1 + 4 * ang_vel2 * ang_vel2 + 1 * ang_vel3 * ang_vel3)
+
+        print('U: ', U)
+        print('K: ', K)
+        print('energy:', U + K)
+
+        return U + K, U, K
+
+
 def gen_trajtory(dir, initial_thetas=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
     sim = PendulumSim()
     loc, vel, loc_theta, vel_theta, edges = sim.sample_trajectory(T=T, sample_freq=sample_freq, initial_thetas=initial_thetas)
@@ -177,6 +229,126 @@ def plot_trajtory_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initi
         plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
 
 
+def plot_eng_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
+    # now uses the initial_thetas to simulate a traj in the same way as the synthetic sim
+    fig, ax = plt.subplots(1, 1, figsize=(18, 12))
+
+    # read from the folder traj/initial_thetas_T_sample_freq/data.pkl
+    # the loaded data is [loc, vel, loc_theta, vel_theta, edges]
+    cache_dir1 = os.path.join(dir, f'traj_{initial_thetas1[0, 0]}_{initial_thetas1[0, 1]}_{initial_thetas1[0, 2]}_{T}_{sample_freq}')
+    loc1, vel1, loc_theta1, vel_theta1, edges1 = pickle.load(open(os.path.join(dir, cache_dir1, 'data.pkl'), 'rb'))
+    cache_dir2 = os.path.join(dir, f'traj_{initial_thetas2[0, 0]}_{initial_thetas2[0, 1]}_{initial_thetas2[0, 2]}_{T}_{sample_freq}')
+    loc2, vel2, loc_theta2, vel_theta2, edges2 = pickle.load(open(os.path.join(dir, cache_dir2, 'data.pkl'), 'rb'))
+    cache_dir3 = os.path.join(dir, f'traj_{initial_thetas3[0, 0]}_{initial_thetas3[0, 1]}_{initial_thetas3[0, 2]}_{T}_{sample_freq}')
+    loc3, vel3, loc_theta3, vel_theta3, edges3 = pickle.load(open(os.path.join(dir, cache_dir3, 'data.pkl'), 'rb'))
+
+    # loc1_t0, vel1_t0, loc_theta1_t0, vel_theta1_t0, edges1_t0 = loc1[0], vel1[0], loc_theta1[0], vel_theta1[0], edges1[0]
+    # print(loc_theta1_t0.shape)
+    # print(vel_theta1_t0.shape)
+    # print(loc1_t0.shape)
+    # print(vel1_t0.shape)
+    # T, U, K = _energy_theta(loc_theta1_t0.T, vel_theta1_t0.T)
+    # T2, U2, K2 = _energy(loc1_t0.T, vel1_t0.T)
+    # exit(1)
+
+    T_theta1, U_theta1, K_theta1 = [], [], []
+    T_theta2, U_theta2, K_theta2 = [], [], []
+    T_theta3, U_theta3, K_theta3 = [], [], []
+    # gen energy for each traj
+    for t in range(loc1.shape[0]):
+        T1, U1, K1 = _energy_theta(loc_theta1[t, 0], vel_theta1[t, 0])
+        T2, U2, K2 = _energy_theta(loc_theta2[t, 0], vel_theta2[t, 0])
+        T3, U3, K3 = _energy_theta(loc_theta3[t, 0], vel_theta3[t, 0])
+        T_theta1.append(T1)
+        U_theta1.append(U1)
+        K_theta1.append(K1)
+        T_theta2.append(T2)
+        U_theta2.append(U2)
+        K_theta2.append(K2)
+        T_theta3.append(T3)
+        U_theta3.append(U3)
+        K_theta3.append(K3)
+    T_theta1 = np.array(T_theta1)
+    U_theta1 = np.array(U_theta1)
+    K_theta1 = np.array(K_theta1)
+    T_theta2 = np.array(T_theta2)
+    U_theta2 = np.array(U_theta2)
+    K_theta2 = np.array(K_theta2)
+    T_theta3 = np.array(T_theta3)
+
+    T_stacked = np.vstack([T_theta1, T_theta2, T_theta3]).T
+    U_stacked = np.vstack([U_theta1, U_theta2, U_theta3]).T
+    K_stacked = np.vstack([K_theta1, K_theta2, K_theta3]).T
+
+    min_T, max_T = np.min(T_stacked), np.max(T_stacked)
+    min_U, max_U = np.min(U_stacked), np.max(U_stacked)
+    min_K, max_K = np.min(K_stacked), np.max(K_stacked)
+
+    max_eng = max(max_T, max_U, max_K)
+    min_eng = min(min_T, min_U, min_K)
+
+    # print(T_stacked.shape)
+    # exit(1)
+
+    for t in range(loc1.shape[0] - 1, loc1.shape[0]):
+        # clear the plot
+        ax.cla()
+        plots = []
+        legends = []
+
+        # plot the last joint theta log
+        lines = ['-', '--', '-.']
+        for theta_idx in range(3):
+            # theta_idx = -1
+            # print(loc_theta1.shape)
+            theta_T = T_stacked[:t + 1, theta_idx]
+            theta_U = U_stacked[:t + 1, theta_idx]
+            theta_K = K_stacked[:t + 1, theta_idx]
+
+            frames = np.arange(t + 1)
+
+            plot_T, = ax.plot(frames, theta_T, marker=markers[theta_idx * 3 + 0], markersize=markersize, markevery=50, fillstyle='none', linewidth=line_width, linestyle='-', color=colors[theta_idx])
+            plot_U, = ax.plot(frames, theta_U, marker=markers[theta_idx * 3 + 1], markersize=markersize, markevery=50, fillstyle='none', linewidth=line_width, linestyle='--', color=colors[theta_idx])
+            plot_K, = ax.plot(frames, theta_K, marker=markers[theta_idx * 3 + 2], markersize=markersize, markevery=50, fillstyle='none', linewidth=line_width, linestyle='-.', color=colors[theta_idx])
+
+            if theta_idx == 0:
+                legends.append(r'Original initial condition: Total Energy')
+                legends.append(r'Potential Energy')
+                legends.append(r'Kinetic Energy')
+            elif theta_idx == 1:
+                legends.append(r'w/ 1e-3 perturbation: Total Energy')
+                legends.append(r'Potential Energy')
+                legends.append(r'Kinetic Energy')
+            else:
+                legends.append(r'w/ 1e-2 perturbation: Total Energy')
+                legends.append(r'Potential Energy')
+                legends.append(r'Kinetic Energy')
+
+            plots.append(plot_T)
+            plots.append(plot_U)
+            plots.append(plot_K)
+
+            ax.legend(plots, legends, loc='upper center', fontsize=label_font, ncol=3)
+            ax.tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelsize=tick_font)
+            ax.get_xaxis().set_visible(True)
+            ax.set_xlabel(r'Time steps', fontsize=label_font)
+            ax.set_ylabel(r'Energies', fontsize=label_font)
+            ax.set_xlim([0, loc1.shape[0]])
+            ax.set_ylim([min_eng, max_eng])
+            ax.grid(True, linestyle='--', linewidth=1.5)
+
+            # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
+            cache_dir = os.path.join(
+                dir,
+                f'compare_traj_{initial_thetas1[0, 0]}_{initial_thetas1[0, 1]}_{initial_thetas1[0, 2]}_{initial_thetas2[0, 0]}_{initial_thetas2[0, 1]}_{initial_thetas2[0, 2]}_{initial_thetas3[0, 0]}_{initial_thetas3[0, 1]}_{initial_thetas3[0, 2]}_{T}_{sample_freq}'
+            )
+            # create dir if necessary
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir)
+
+            plt.savefig(os.path.join(dir, cache_dir, f'compare_eng3_{t}.png'), transparent=False, dpi=300, bbox_inches="tight")
+
+
 def plot_theta_vel_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
     # now uses the initial_thetas to simulate a traj in the same way as the synthetic sim
     fig, ax = plt.subplots(1, 1, figsize=(18, 12))
@@ -287,8 +459,8 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
     groundtruth_traj = groundtruth_traj[traj_idx]
 
     # de-normalize
-    min_vec=np.array([min_loc, min_loc, min_vel, min_vel])
-    max_vec=np.array([max_loc, max_loc, max_vel, max_vel])
+    min_vec = np.array([min_loc, min_loc, min_vel, min_vel])
+    max_vec = np.array([max_loc, max_loc, max_vel, max_vel])
     forward_traj = (forward_traj + 1) / 2 * (max_vec - min_vec) + min_vec
     groundtruth_traj = (groundtruth_traj + 1) / 2 * (max_vec - min_vec) + min_vec
 
@@ -389,9 +561,10 @@ if __name__ == '__main__':
     ### plot the traj comparisons with perturbation
     # plot_trajtory_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
     # plot_theta_vel_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
+    plot_eng_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
 
     ### plot the learned results
-    plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00')
+    # plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00')
     # plot_trajtory_learned('.', '60_Ham_ob0.40')
     # plot_trajtory_learned('.', '60_LGODE_ob0.40_rflambda0.00')
 

@@ -7,7 +7,7 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import softmax,add_remaining_self_loops
 import math
 import lib.utils as utils
-
+import pdb
 
 class TemporalEncoding(nn.Module):
 
@@ -47,6 +47,7 @@ class GTrans(MessagePassing):
         self.d_e = d_k//n_heads
         self.d_sqrt = math.sqrt(d_k//n_heads)
 
+        # pdb.set_trace()
         #Attention Layer Initialization
         self.w_k_list_same = nn.ModuleList([nn.Linear(self.d_input, self.d_k, bias=True) for i in range(self.n_heads)])
         self.w_k_list_diff = nn.ModuleList([nn.Linear(self.d_input, self.d_k, bias=True) for i in range(self.n_heads)])
@@ -274,7 +275,7 @@ class GNN(nn.Module):
         h_0 = F.relu(self.adapt_ws(x))
         h_t = self.drop(h_0)
         h_t = self.layer_norm(h_t)
-
+        # pdb.set_trace()
         for gc in self.gcs:
             h_t = gc(h_t, edge_index, edge_time, x_time,edge_same)  #[num_nodes,d]
 

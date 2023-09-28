@@ -6,7 +6,7 @@ import scipy.sparse as sp
 from tqdm import tqdm
 import lib.utils as utils
 from torch.nn.utils.rnn import pad_sequence
-
+import pdb
 class ParseData(object):
 
     def __init__(self, dataset_path,args,suffix='_springs5',mode="interp"):
@@ -52,7 +52,7 @@ class ParseData(object):
         print("number graph in   "+data_type+"   is %d" % self.num_graph)
         print("number atoms in   " + data_type + "   is %d" % self.num_atoms)
 
-        if self.suffix == "_springs5" or self.suffix == "_charged5" or self.suffix == '_springs_external5' or self.suffix == '_springs_damped5' or self.suffix == '_pendulum3':
+        if self.suffix == "_springs5" or self.suffix == "_charged5" or self.suffix == '_forced_spring5' or self.suffix == '_springs_damped5' or self.suffix == '_pendulum3':
 
             # Normalize features to [-1, 1], across test and train dataset
 
@@ -88,6 +88,7 @@ class ParseData(object):
             time_begin = 0
         else:
             time_begin = 1
+        # pdb.set_trace()
         encoder_data_loader, graph_data_loader = self.transfer_data(loc_observed, vel_observed, edges,
                                                                     times_observed, time_begin=time_begin)
 

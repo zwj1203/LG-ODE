@@ -37,8 +37,8 @@ parser.add_argument('--gen-layers', type=int, default=1, help="Number of layers 
 parser.add_argument('--extrap', type=str, default="True",
                     help="Set extrapolation mode. If this flag is not set, run interpolation mode.")
 parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate (1 - keep probability).')
-parser.add_argument('--sample-percent-train', type=float, default= 1, help='Percentage of training observtaion data')
-parser.add_argument('--sample-percent-test', type=float, default=1, help='Percentage of testing observtaion data')
+parser.add_argument('--sample-percent-train', type=float, default= 0.6, help='Percentage of training observtaion data')
+parser.add_argument('--sample-percent-test', type=float, default=0.6, help='Percentage of testing observtaion data')
 parser.add_argument('--augment_dim', type=int, default=64, help='augmented dimension')
 parser.add_argument('--edge_types', type=int, default=2, help='edge number in NRI')
 parser.add_argument('--odenet', type=str, default="NRI", help='NRI')
@@ -64,7 +64,8 @@ parser.add_argument('--Tmax', type=float, default=2000, help='optimazor')
 parser.add_argument('--eta_min', type=float, default=0, help='optimazor')
 parser.add_argument('--visdata_dir', type=str, default='visdata', help='vis root directory')
 parser.add_argument('--name', type=str, default="LGODE",help="LGODE,DCGODE")
-
+parser.add_argument('--pred_length_cut', type=int, default=60,help="should be less equal to total ode steps")
+parser.add_argument('--use_trsode', action='store_true', default=False)
 
 
 
@@ -83,7 +84,7 @@ if args.data == "damped_spring":
     args.dataset='data/damped_spring'
 
 if args.data == "forced_spring":
-    args.suffix = '_springs_external5'
+    args.suffix = '_forced_spring5'
     args.dataset='data/forced_spring'
 
 if args.data == "charged":
@@ -165,7 +166,7 @@ if __name__ == '__main__':
     ##################################################################
     # Load checkpoint and evaluate the model
     if args.load is not None:
-        ckpt_path = os.path.join(args.save, args.load)
+        ckpt_path = os.path.join(args.load)
         utils.get_ckpt_model(ckpt_path, model, device)
         # exit()
 
@@ -297,6 +298,23 @@ if __name__ == '__main__':
         return message_train , np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list)
 
 
+
+
+    for pred_length_cut in [60]:#[20, 30, 40, 50, 60]:
+        test_res,gt,f, r = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
+                                                n_batches=test_batch, device=device,
+                                                n_traj_samples=3, energy_lambda=args.energy_lambda,
+                                                reverse_f_lambda=args.reverse_f_lambda,
+                                                reverse_gt_lambda=args.reverse_gt_lambda,
+                                                pred_length_cut=pred_length_cut)
+            # pdb.set_trace()
+
+
+        message_test = 'Epoch 0 [Test seq (cond on sampled tp)]| Loss {:.6f} | Forward gt MSE {:.12f} | Reverse f MSE {:.6f} | Reverse gt MSE {:.6f}| forward_gt_rmse {:.6f}'.format(
+            test_res["loss"],
+            test_res["forward_gt_mse"], test_res["reverse_f_mse"], 
+            test_res["reverse_gt_mse"],test_res["forward_gt_rmse"])
+        print(message_test)
 
 
     for epo in range(1, args.niters + 1):

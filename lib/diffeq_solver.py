@@ -16,7 +16,7 @@ class DiffeqSolver(nn.Module):
         self.reverse_ode_func = reverse_ode_func
         self.args = args
         self.num_atoms = args.n_balls
-
+        self.use_trsode = args.use_trsode
 
         self.odeint_rtol = odeint_rtol
         self.odeint_atol = odeint_atol
@@ -73,19 +73,39 @@ class DiffeqSolver(nn.Module):
         rel_type_onehot.zero_()
         rel_type_onehot.scatter_(2, graph_augmented.view(first_point_augumented.size(0), -1, 1), 1)  # [b,20,2]
         # rel_type_onehot[b,20,1]: edge value, [b,20,0] :1-edge value.
-
+        # pdb.set_trace()
         self.ode_func.set_graph(rel_type_onehot,self.rel_rec,self.rel_send,self.args.edge_types)
 
 
+       
         pred_y = odeint(self.ode_func, first_point_augumented, time_steps_to_predict,
             rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
-        pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], time_steps_to_predict_reverse,
-            rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
+        
+        
+        if not self.use_trsode:
+            pred_y_reverse_flipped = odeint(self.reverse_ode_func, pred_y[-1], time_steps_to_predict_reverse,
+                rtol=self.odeint_rtol, atol=self.odeint_atol, method = self.ode_method) #[time_length, n_sample*b,n_ball, d]
 
-        pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[0])
-        # pdb.set_trace()
-        assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
+            pred_y_reverse = torch.flip(pred_y_reverse_flipped, dims=[0])
+            # pdb.set_trace()
+            assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
+        else:
+            xr = first_point_augumented
+            ls_xr = [xr]
+            dts = time_steps_to_predict[1:] - time_steps_to_predict[:-1]
+            for i in range(time_steps_to_predict.shape[0]-1):
+                dt = dts[i]
 
+                dxr1 = - self.ode_func(None, xr) * dt
+                dxr2 = - self.ode_func(None, xr + 0.5 * dxr1) * dt
+                dxr3 = - self.ode_func(None, xr + 0.5 * dxr2) * dt
+                dxr4 = - self.ode_func(None, xr + dxr3) * dt
+                dxr = (1 / 6) * (dxr1 + 2 * dxr2 + 2 * dxr3 + dxr4)
+                xr = xr + dxr
+                ls_xr.append(xr)
+            
+            pred_y_reverse = torch.stack(ls_xr, dim=0)
+            assert torch.all(pred_y_reverse[0] == pred_y[0]), "Tensors are not identical"
         '''
         pred_y = self.ode_func(time_steps_to_predict, first_point_augumented)
         pred_y = pred_y.repeat(time_steps_to_predict.shape[0], 1, 1,1)
@@ -135,12 +155,13 @@ class DiffeqSolver(nn.Module):
             pred_y_reverse = pred_y_reverse[:, :, :, :-self.args.augment_dim]
 
         # assert torch.all(pred_y_reverse[-1] == pred_y[-1]), "Tensors are not identical"
-
+        
 
         return pred_y, pred_y_reverse
 
         print("After return pred_y_reverse shape:", pred_y_reverse.shape)
         print("pred_y shape:", pred_y.shape)
+
     def encode_onehot(self,labels):
         classes = set(labels)
         classes_dict = {c: np.identity(len(classes))[i, :] for i, c in
@@ -331,7 +352,6 @@ class GraphODEFunc(nn.Module):
             layer.base_conv.rel_send = rel_send
             layer.base_conv.edge_types = edge_types
         self.nfe = 0
-
 
 
 class ODEFunc(nn.Module):

@@ -52,6 +52,7 @@ def create_LatentODE_model(args, input_dim, z0_prior, obsrv_std, device):
 		z0_prior = z0_prior, 
 		device = device,
 		obsrv_std = obsrv_std,
+		use_trsode = args.use_trsode
 		).to(device)
 
 	return model

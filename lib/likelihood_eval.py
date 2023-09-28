@@ -109,6 +109,13 @@ def compute_mape(mu, data, mask):
 	_,res = compute_masked_likelihood(mu, data, mask, mape)
 	return res
 
+def compute_rmse(mu, data, mask):
+	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()
+	assert (data.size()[-1] == n_dims)
+
+	res,_ = compute_masked_likelihood(mu, data, mask, mape)
+	return res
+
 def compute_average_energy(mu,n_ball,k,mask):
 	# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	n_traj_samples, n_traj, n_timepoints, n_dims = mu.size()

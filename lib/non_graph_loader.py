@@ -53,7 +53,7 @@ class ParseData(object):
         print("number graph in   "+data_type+"   is %d" % self.num_graph)
         print("number atoms in   " + data_type + "   is %d" % self.num_atoms)
 
-        if self.suffix == "_springs5" or self.suffix == "_charged5" or self.suffix == '_springs_external5':
+        if self.suffix == "_springs5" or self.suffix == "_charged5" or self.suffix == '_forced_spring5' or self.suffix == 'pendulum3' or self.suffix == '_springs_damped5':
             # Normalize features to [-1, 1], across test and train dataset
 
             if self.max_loc == None:

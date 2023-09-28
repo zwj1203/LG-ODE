@@ -16,7 +16,7 @@ def save_checkpoint(state, save, epoch):
 	filename = os.path.join(save, 'checkpt-%04d.pth' % epoch)
 	torch.save(state, filename)
 
-	
+
 def get_logger(logpath, filepath, package_files=[],
 			   displaying=True, saving=True, debug=False):
 	logger = logging.getLogger()
@@ -126,7 +126,7 @@ def get_ckpt_model(ckpt_path, model, device):
 	# 1. filter out unnecessary keys
 	state_dict = {k: v for k, v in state_dict.items() if k in model_dict}
 	# 2. overwrite entries in the existing state dict
-	model_dict.update(state_dict) 
+	model_dict.update(state_dict)
 	# 3. load the new state dict
 	model.load_state_dict(state_dict)
 	model.to(device)
@@ -151,7 +151,7 @@ def linspace_vector(start, end, n_points):
 		# start and end are vectors
 		res = torch.Tensor()
 		for i in range(0, start.size(0)):
-			res = torch.cat((res, 
+			res = torch.cat((res,
 				torch.linspace(start[i], end[i], n_points)),0)
 		res = torch.t(res.reshape(start.size(0), n_points))
 	return res
@@ -177,7 +177,8 @@ def create_net(n_inputs, n_outputs, n_layers = 1,
 def compute_loss_all_batches(model,
 	encoder,graph,decoder,
 	n_batches, device,
-	n_traj_samples = 1, energy_lambda = 1.,reverse_f_lambda = 1.,reverse_gt_lambda = 1.):
+	n_traj_samples = 1, energy_lambda = 1.,reverse_f_lambda = 1.,reverse_gt_lambda = 1.,
+	pred_length_cut=None):
 
 	total = {}
 	total["loss"] = 0
@@ -188,6 +189,7 @@ def compute_loss_all_batches(model,
 	total["reverse_f_mse"] = 0
 	total["reverse_gt_mse"] = 0
 	total["forward_gt_mape"] = 0
+	total["forward_gt_rmse"] = 0
 
 
 
@@ -206,7 +208,8 @@ def compute_loss_all_batches(model,
 			batch_dict_decoder = get_next_batch(decoder, device)
 
 			results, gt, f, r = model.compute_all_losses(batch_dict_encoder, batch_dict_decoder, batch_dict_graph,
-											   n_traj_samples=n_traj_samples, reverse_f_lambda=reverse_f_lambda,reverse_gt_lambda=reverse_gt_lambda)
+											   n_traj_samples=n_traj_samples, reverse_f_lambda=reverse_f_lambda,
+											   reverse_gt_lambda=reverse_gt_lambda, pred_length_cut=pred_length_cut)
 
 			for key in total.keys():
 				if key in results:

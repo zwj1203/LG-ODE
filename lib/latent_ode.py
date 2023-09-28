@@ -4,7 +4,7 @@ import torch
 
 class LatentGraphODE(VAE_Baseline):
 	def __init__(self, input_dim, latent_dim, encoder_z0, decoder, diffeq_solver,
-				 z0_prior, device, obsrv_std=None):
+				 z0_prior, device, obsrv_std=None, use_trsode=False):
 
 		super(LatentGraphODE, self).__init__(
 			input_dim=input_dim, latent_dim=latent_dim,
@@ -15,7 +15,7 @@ class LatentGraphODE(VAE_Baseline):
 		self.diffeq_solver = diffeq_solver
 		self.decoder = decoder
 		self.latent_dim =latent_dim
-
+		self.use_trsode = use_trsode
 
 
 	def get_reconstruction(self, batch_en,batch_de, batch_g,n_traj_samples=1,run_backwards=True):
@@ -50,6 +50,9 @@ class LatentGraphODE(VAE_Baseline):
         # Decoder:
 		pred_x = self.decoder(sol_y)
 		pred_x_reverse = self.decoder(sol_y_reverse)
+		if self.use_trsode:
+			D = pred_x_reverse.shape[-1] // 2
+			pred_x_reverse[:,:,:,D:] = -pred_x_reverse[:,:,:,D:]
 
 		all_extra_info = {
 			"first_point": (torch.unsqueeze(first_point_mu,0), torch.unsqueeze(first_point_std,0), torch.unsqueeze(first_point_mu, 0)),

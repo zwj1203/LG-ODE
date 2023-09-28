@@ -15,14 +15,14 @@ from pathlib import Path
 import pdb
 
 
-def compute_loss_all_batches(model, encoder, graph, decoder, n_batches, device, function_type):
-
+def compute_loss_all_batches(model, encoder, graph, decoder, n_batches, device, function_type, pred_length_cut=None):
     total = {}
     total["loss"] = 0
     total["mse"] = 0
     total["mape"] = 0
     total["forward_gt_mse"] = 0
     total["reverse_f_mse"] = 0
+    total["rmse"] = 0
 
     n_test_batches = 0
 
@@ -34,7 +34,7 @@ def compute_loss_all_batches(model, encoder, graph, decoder, n_batches, device, 
             batch_dict_decoder = utils.get_next_batch(decoder, device)
             batch_dict_graph = utils.get_next_batch_new(graph, device)
                 
-            results = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
+            results = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph, pred_length_cut=pred_length_cut)
 
             for key in total.keys():
                 if key in results:
@@ -53,7 +53,7 @@ def compute_loss_all_batches(model, encoder, graph, decoder, n_batches, device, 
                 batch_dict_decoder = utils.get_next_batch(decoder, device)
                 batch_dict_graph = utils.get_next_batch_new(graph, device)
                     
-                results = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
+                results = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph, pred_length_cut=pred_length_cut)
 
                 for key in total.keys():
                     if key in results:
@@ -127,6 +127,9 @@ parser.add_argument('--nb_units', type=int, default=1000, help='nb_units for ode
 parser.add_argument('--nb_layers', type=int, default=1, help='nb_layers for ode network')
 parser.add_argument('--activation', type=str, default='tanh', help='activation for ode network')
 parser.add_argument('--name', type=str, default="TRSODE",help="TRSODE" )
+parser.add_argument('--time_dep_lambda', action='store_true', default=False)
+parser.add_argument('--time_dep_lambda_coef', type=float, default=0.5)
+
 
 args = parser.parse_args()
 assert (int(args.rec_dims % args.n_heads) == 0)
@@ -140,7 +143,7 @@ if args.data == "damped_spring":
     args.dataset='data/damped_spring'
 
 if args.data == "forced_spring":
-    args.suffix = '_springs_external5'
+    args.suffix = '_forced_spring5'
     args.dataset='data/forced_spring'
 
 if args.data == "charged":
@@ -223,7 +226,7 @@ if __name__ == '__main__':
     ##################################################################
     # Load checkpoint and evaluate the model
     if args.load is not None:
-        ckpt_path = os.path.join(args.save, args.load)
+        ckpt_path = os.path.join(args.load)
         utils.get_ckpt_model(ckpt_path, model, device)
         # exit()
 
@@ -278,10 +281,10 @@ if __name__ == '__main__':
             args.reverse_gt_lambda)
     ))
 
-    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph=None):
+    def train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph=None, reverse_f_lambda=None):
 
         optimizer.zero_grad()
-        train_res = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
+        train_res = model.compute_loss(batch_dict_encoder, batch_dict_decoder, batch_dict_graph, reverse_f_lambda)
 
         loss = train_res["loss"]
         loss.backward()
@@ -298,7 +301,7 @@ if __name__ == '__main__':
         return loss_value, train_res["mse"], train_res["forward_gt_mse"],train_res["reverse_f_mse"]
 
 
-    def train_epoch(epo):
+    def train_epoch(epo, reverse_f_lambda):
         model.train()
         loss_list = []
         mse_list = []
@@ -320,7 +323,7 @@ if __name__ == '__main__':
             if args.function_type:
                  batch_dict_graph = utils.get_next_batch_new(train_graph, device)
 
-            loss, mse, forward_gt_mse,reverse_f_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph)
+            loss, mse, forward_gt_mse,reverse_f_mse = train_single_batch(model, batch_dict_encoder, batch_dict_decoder, batch_dict_graph, reverse_f_lambda)
 
             loss_list.append(loss), mse_list.append(mse), forward_gt_mse_list.append(
                 forward_gt_mse), reverse_f_mse_list.append(reverse_f_mse)
@@ -339,14 +342,28 @@ if __name__ == '__main__':
         # return message_train ,np.mean(energy_mse_list), np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list),np.mean(reverse_gt_mse_list)
         return message_train , np.mean(forward_gt_mse_list), np.mean(reverse_f_mse_list)
 
+    for pred_length_cut in [20, 30, 40, 50, 60]:
+        test_res = compute_loss_all_batches(model, test_encoder, test_graph, test_decoder,
+                                                n_batches=test_batch, device=device,
+                                                function_type=args.function_type,
+                                                pred_length_cut=pred_length_cut)
+            # pdb.set_trace()
 
 
+        message_test = 'Epoch 0 [Test seq (cond on sampled tp)]| Loss {:.6f} | Forward gt MSE {:.6f} | Reverse f MSE {:.6f} | forward_gt_rmse {:.6f} '.format(
+            test_res["loss"],
+            test_res["forward_gt_mse"], test_res["reverse_f_mse"], test_res["rmse"])
+        print(message_test)
 
     for epo in range(1, args.niters + 1):
-        reverse_f_lambda = args.reverse_f_lambda*epo
+        if args.time_dep_lambda:
+            reverse_f_lambda = args.reverse_f_lambda + args.time_dep_lambda_coef  * epo
+        else:
+            reverse_f_lambda = args.reverse_f_lambda
         reverse_gt_lambda = args.reverse_gt_lambda
+        print(reverse_f_lambda)
         # message_train,train_energy_mse,train_forward_gt_mse,train_reverse_f_mse,train_reverse_gt_mse = train_epoch(epo)
-        message_train,train_forward_gt_mse,train_reverse_f_mse = train_epoch(epo)
+        message_train,train_forward_gt_mse,train_reverse_f_mse = train_epoch(epo, reverse_f_lambda)
 
         if epo % n_iters_to_viz == 0:
             model.eval()
@@ -408,7 +425,15 @@ if __name__ == '__main__':
                 # np.save(os.path.join(forward_dir, 'forward_trajectory.npy'), f.cpu().detach().numpy())
                 # np.save(os.path.join(reverse_dir, 'reverse_trajectory.npy'), r.cpu().detach().numpy())
 
-
+                ckpt_path = os.path.join(args.save, "experiment_" + str(
+                    experimentID) + "_"  + args.data + "_" + str(
+                    args.total_ode_step) + "_" + args.name +"_obratio_"+str(args.sample_percent_train)+"_rflambda_"+str(args.reverse_f_lambda)+ "_epoch_" + str(epo) + "_mse_" + str(
+                    best_test_mse) + '.ckpt')
+                torch.save({
+                    'args': args,
+                    'state_dict': model.state_dict(),
+                }, ckpt_path)
+                
                 logger.info(message_test_best)
 
             if train_forward_gt_mse < best_train_mse:
@@ -417,14 +442,14 @@ if __name__ == '__main__':
                     epo,best_train_mse)
                 logger.info(message_train_best)
 
-                ckpt_path = os.path.join(args.save, "experiment_" + str(
-                    experimentID) + "_" + args.z0_encoder + "_" + args.data + "_" + str(
-                    args.sample_percent_train) + "_" + args.mode + "_epoch_" + str(epo) + "_mse_" + str(
-                    best_test_mse) + '.ckpt')
-                torch.save({
-                    'args': args,
-                    'state_dict': model.state_dict(),
-                }, ckpt_path)
+                # ckpt_path = os.path.join(args.save, "experiment_" + str(
+                #     experimentID) + "_" + args.z0_encoder + "_" + args.data + "_" + str(
+                #     args.sample_percent_train) + "_" + args.mode + "_epoch_" + str(epo) + "_mse_" + str(
+                #     best_test_mse) + '.ckpt')
+                # torch.save({
+                #     'args': args,
+                #     'state_dict': model.state_dict(),
+                # }, ckpt_path)
 
 
             writer.add_scalar('train_MSE/train_forward_gt_mse', train_forward_gt_mse, epo)

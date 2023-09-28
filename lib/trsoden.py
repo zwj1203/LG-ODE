@@ -254,7 +254,7 @@ class ODENetwork(nn.Module):
 
         return computed_init_states
 
-    def compute_loss(self, batch_enc, batch_dec, graph=None):
+    def compute_loss(self, batch_enc, batch_dec, graph=None, lambda_trs=None, pred_length_cut=None):
         init_states = self.first_point_imputation(batch_enc, batch_dec) #b x n_objects, D
         b = init_states.shape[0] // self.nb_object
         
@@ -289,8 +289,8 @@ class ODENetwork(nn.Module):
             T, D = X.shape[2], X.shape[3]
             X, Xr = X.reshape(init_states.shape[0], T, D), Xr.reshape(init_states.shape[0], T, D) # [B x N, T, d x 2]
             
-            Xq, Xp = X[:,:,:D], X[:,:,D:]
-            Xrq, Xrp = Xr[:,:,:D], Xr[:,:,D:]
+            Xq, Xp = X[:,:,:D//2], X[:,:,D//2:]
+            Xrq, Xrp = Xr[:,:,:D//2], Xr[:,:,D//2:]
 
 
         if padding:
@@ -300,8 +300,15 @@ class ODENetwork(nn.Module):
             batch_dec["data"] = batch_dec["data"][:, 1:, :]
             
         # X = torch.cat([Xq, Xp], dim=2)
+        # pdb.set_trace()
+        if pred_length_cut is None:
+            pred_length_cut = mask.shape[1]
+        # print(pred_length_cut)
+        Xq, Xp, Xrq, Xrp = Xq[:, :pred_length_cut, :], Xp[:, :pred_length_cut, :], Xrp[:, :pred_length_cut, :], Xrp[:, :pred_length_cut, :]
+        mask, batch_dec["data"] = mask[:, :pred_length_cut, :], batch_dec["data"][:, :pred_length_cut, :]
+        
         timelength_per_nodes = torch.sum(mask.permute(0,2,1),dim=2)
-
+        # pdb.set_trace()
         # mask = mask.reshape(b, self.nb_object, T, -1).permute(0,2,1,3).reshape(b, T, -1)
         # pdb.set_trace()
         forward_diff = torch.square(torch.cat([Xq, Xp], dim=2) - batch_dec["data"]) * mask
@@ -312,7 +319,10 @@ class ODENetwork(nn.Module):
         fr_diff = fr_diff.sum(dim=1) / timelength_per_nodes
         l_trs = torch.mean(fr_diff)
 
-        l = l_ode + self.lambda_trs * l_trs
+        if lambda_trs is not None:
+            l = l_ode + lambda_trs * l_trs
+        else:
+            l = l_ode + self.lambda_trs * l_trs
         
         #sum over time dim
         forward_mape = torch.abs(torch.cat([Xq, Xp], dim=2) - batch_dec["data"]) / torch.maximum(1e-9*torch.ones_like(batch_dec["data"]), torch.abs(batch_dec["data"])) 
@@ -322,12 +332,17 @@ class ODENetwork(nn.Module):
         forward_mape = forward_mape / timelength_per_nodes
         forward_mape = torch.mean(forward_mape)
 
+        forward_rmse = torch.abs(torch.cat([Xq, Xp], dim=2) - batch_dec["data"])  * mask
+        forward_rmse = forward_rmse.sum(dim=1) / timelength_per_nodes
+        forward_rmse = torch.mean(forward_rmse)
+
         results = {}
         results["loss"] = l
         results["mse"] = l_ode.data.item() + l_trs.data.item()
         results["forward_gt_mse"] = l_ode.data.item()
         results["reverse_f_mse"] = l_trs.data.item()
         results["mape"] = forward_mape.data.item()
+        results["rmse"] = forward_rmse.data.item()
 
         return results
 

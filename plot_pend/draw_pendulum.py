@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 from synthetic_sim_pendulum import PendulumSim
 import pickle
+# import torch
 
 paint_res = 300  # TODO change to 300 when publish
 label_font = 24
@@ -15,6 +16,55 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["legend.frameon"] = False
 plt.rcParams['figure.dpi'] = paint_res
 plt.rcParams.update({'figure.autolayout': True})
+
+
+def _convert_xy_to_theta(linear_loc):
+    eps = 1e-6
+    # assume input linear_loc are [T,3,2] np array (de normalized)
+    # convert to loc (in theta)
+    rod1_vec = linear_loc[:, 0, :]
+    rod2_vec = linear_loc[:, 1, :] - linear_loc[:, 0, :]
+    rod3_vec = linear_loc[:, 2, :] - linear_loc[:, 1, :]
+    rod1_len = np.linalg.norm(rod1_vec, axis=-1)
+    rod2_len = np.linalg.norm(rod2_vec, axis=-1)
+    rod3_len = np.linalg.norm(rod3_vec, axis=-1)
+    sin_theta1 = rod1_vec[:, 0] / rod1_len
+    cos_theta1 = -rod1_vec[:, 1] / rod1_len
+    sin_theta2 = rod2_vec[:, 0] / rod2_len
+    cos_theta2 = -rod2_vec[:, 1] / rod2_len
+    sin_theta3 = rod3_vec[:, 0] / rod3_len
+    cos_theta3 = -rod3_vec[:, 1] / rod3_len
+
+    # tan_theta1 = sin_theta1 / cos_theta1
+    # tan_theta2 = sin_theta2 / cos_theta2
+    # tan_theta3 = sin_theta3 / cos_theta3
+
+    # theta1 = np.arctan(tan_theta1)
+    # theta2 = np.arctan(tan_theta2)
+    # theta3 = np.arctan(tan_theta3)
+
+    theta1 = np.arctan2(sin_theta1, cos_theta1)
+    theta2 = np.arctan2(sin_theta2, cos_theta2)
+    theta3 = np.arctan2(sin_theta3, cos_theta3)
+
+    # # Ensure theta is in the range [0, 2π)
+    # if theta1 < 0:
+    #     theta1 += 2 * np.pi
+
+    # find where each rod len (shape is (T,)) is smaller than eps
+    tiny_rod1_idx = np.where(rod1_len < eps)[0]
+    tiny_rod2_idx = np.where(rod2_len < eps)[0]
+    tiny_rod3_idx = np.where(rod3_len < eps)[0]
+
+    theta1[tiny_rod1_idx] = 0.0
+    theta2[tiny_rod2_idx] = 0.0
+    theta3[tiny_rod3_idx] = 0.0
+
+    thetas = np.stack([theta1, theta2, theta3], axis=-1)
+    # print(thetas.shape)
+    # exit(1)
+
+    return thetas
 
 
 def _energy_theta(loc, vel):
@@ -478,7 +528,7 @@ def plot_eng_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_th
             plt.savefig(os.path.join(dir, cache_dir, f'compare_eng3_{t}.png'), transparent=False, dpi=300, bbox_inches="tight")
 
 
-def plot_theta_vel_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
+def plot_theta_gts_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
     # now uses the initial_thetas to simulate a traj in the same way as the synthetic sim
     fig, ax = plt.subplots(1, 1, figsize=(18, 12))
 
@@ -516,6 +566,11 @@ def plot_theta_vel_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), init
             theta2 = loc_theta2[:t + 1, 0, joint_idx]
             theta3 = loc_theta3[:t + 1, 0, joint_idx]
 
+            # mod thetas with [0,2 pi)
+            # theta1 = np.mod((theta1 + np.pi), 2 * np.pi) - np.pi
+            # theta2 = np.mod((theta2 + np.pi), 2 * np.pi) - np.pi
+            # theta3 = np.mod((theta3 + np.pi), 2 * np.pi) - np.pi
+
             frames = np.arange(t + 1)
 
             plot1, = ax.plot(frames, theta1, marker=markers[joint_idx * 3 + 0], markersize=markersize, markevery=50, fillstyle='none', linewidth=line_width, linestyle='-', color=colors[joint_idx])
@@ -541,7 +596,7 @@ def plot_theta_vel_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), init
             ax.set_xlabel(r'Time steps', fontsize=label_font)
             ax.set_ylabel(r'Joint ' + r'$\theta$', fontsize=label_font)
             ax.set_xlim([0, loc1.shape[0]])
-            ax.set_ylim([min_theta, max_theta])
+            # ax.set_ylim([min_theta, max_theta])
             ax.grid(True, linestyle='--', linewidth=1.5)
 
             # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
@@ -673,6 +728,133 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
         plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
 
 
+def plot_theta_learned_gt_compare(dir, our_model, prev_model, traj_idx=40):
+    # now uses the initial_thetas to simulate a traj in the same way as the synthetic sim
+    fig, ax = plt.subplots(1, 1, figsize=(18, 12))
+
+    # read from the folder traj/initial_thetas_T_sample_freq/data.pkl
+    # the loaded data is [loc, vel, loc_theta, vel_theta, edges]
+    # read from the folder dir/pendulum/pendulum_{model_name}
+    # under this folder there are forward_trajectory.npy and groundtruth_trajectory.npy
+    folder_name = os.path.join(dir, 'pendulum', f'pendulum_{our_model}')
+    forward_traj = np.load(os.path.join(folder_name, 'forward_trajectory.npy'))
+    groundtruth_traj = np.load(os.path.join(folder_name, 'groundtruth_trajectory.npy'))
+    # print(groundtruth_traj.shape)
+    # mask = np.load(os.path.join(folder_name, 'mask.npy'), allow_pickle=True)
+
+    # print(mask.shape)
+    # exit(1)
+
+    # load the prev model
+    folder_name_prev = os.path.join(dir, 'pendulum', f'pendulum_{prev_model}')
+    forward_traj_prev = np.load(os.path.join(folder_name_prev, 'forward_trajectory.npy'))
+
+    # read normalizer from dir/pendulum/normalizer.json
+    import json
+    with open(os.path.join(dir, 'pendulum', 'normalizer.json'), 'r') as f:
+        normalizer = json.load(f)
+
+    min_loc = normalizer['min_loc']
+    max_loc = normalizer['max_loc']
+    min_vel = normalizer['min_vel']
+    max_vel = normalizer['max_vel']
+
+    min_vec = np.array([min_loc, min_loc])
+    max_vec = np.array([max_loc, max_loc])
+
+    # reshape to [-1,3,60,4]
+    forward_traj = forward_traj.reshape(-1, 3, 60, 4)
+    groundtruth_traj = groundtruth_traj.reshape(-1, 3, 60, 4)
+    forward_traj_prev = forward_traj_prev.reshape(-1, 3, 60, 4)
+    # print(forward_traj.shape)
+    # print(groundtruth_traj.shape)
+    # exit()
+
+    # choose traj_idx at 0th dim; shape is [3,T,4]
+    # permute to [T,3,4]
+    # get only the [..,:2] begining dim: for linear loc
+    forward_traj = forward_traj[traj_idx].transpose(1, 0, 2)[..., :2]
+    groundtruth_traj = groundtruth_traj[traj_idx].transpose(1, 0, 2)[..., :2]
+    forward_traj_prev = forward_traj_prev[traj_idx].transpose(1, 0, 2)[..., :2]
+
+    # de-normalize
+    forward_traj = (forward_traj + 1) / 2 * (max_vec - min_vec) + min_vec
+    groundtruth_traj = (groundtruth_traj + 1) / 2 * (max_vec - min_vec) + min_vec
+    forward_traj_prev = (forward_traj_prev + 1) / 2 * (max_vec - min_vec) + min_vec
+
+    # convert traj (x,y) into thetas
+    forward_traj_theta = _convert_xy_to_theta(forward_traj)
+    # print('1')
+    groundtruth_traj_theta = _convert_xy_to_theta(groundtruth_traj)
+    # print('1')
+    forward_traj_prev_theta = _convert_xy_to_theta(forward_traj_prev)
+    # print('1')
+
+    # print(forward_traj_theta.shape)
+    # exit(1)
+
+    # min_theta1 = np.min(loc_theta1[:, 0, :])
+    # max_theta1 = np.max(loc_theta1[:, 0, :])
+    # min_theta2 = np.min(loc_theta2[:, 0, :])
+    # max_theta2 = np.max(loc_theta2[:, 0, :])
+    # min_theta3 = np.min(loc_theta3[:, 0, :])
+    # max_theta3 = np.max(loc_theta3[:, 0, :])
+
+    # min_theta = min(min_theta1, min_theta2, min_theta3)
+    # max_theta = max(max_theta1, max_theta2, max_theta3)
+
+    for t in range(forward_traj_theta.shape[0] - 1, forward_traj_theta.shape[0]):
+        # clear the plot
+        ax.cla()
+        plots = []
+        legends = []
+
+        # plot the last joint theta log
+        lines = ['-', '--', '-.']
+        for joint_idx in range(forward_traj_theta.shape[-1]):
+            # joint_idx = -1
+            # print(loc_theta1.shape)
+            theta1 = groundtruth_traj_theta[:t + 1, joint_idx]
+            theta2 = forward_traj_theta[:t + 1, joint_idx]
+            theta3 = forward_traj_prev_theta[:t + 1, joint_idx]
+
+            frames = np.arange(t + 1)
+
+            plot1, = ax.plot(frames, theta1, marker=markers[joint_idx * 3 + 0], markersize=markersize, markevery=4, fillstyle='none', linewidth=line_width, linestyle='-', color=colors[joint_idx])
+            plot2, = ax.plot(frames, theta2, marker=markers[joint_idx * 3 + 1], markersize=markersize, markevery=4, fillstyle='none', linewidth=line_width, linestyle='--', color=colors[joint_idx])
+            plot3, = ax.plot(frames, theta3, marker=markers[joint_idx * 3 + 2], markersize=markersize, markevery=4, fillstyle='none', linewidth=line_width, linestyle='-.', color=colors[joint_idx])
+
+            if joint_idx == 0:
+                legends.append(r'GT: ' + rf'$\theta_{joint_idx}$')
+                legends.append(r'TANGO: ' + rf'$\theta_{joint_idx}$')
+                legends.append(r'LGODE: ' + rf'$\theta_{joint_idx}$')
+            else:
+                legends.append(rf'$\theta_{joint_idx}$')
+                legends.append(rf'$\theta_{joint_idx}$')
+                legends.append(rf'$\theta_{joint_idx}$')
+
+            plots.append(plot1)
+            plots.append(plot2)
+            plots.append(plot3)
+
+            ax.legend(plots, legends, loc='upper center', fontsize=label_font, ncol=3)
+            ax.tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelsize=tick_font)
+            ax.get_xaxis().set_visible(True)
+            ax.set_xlabel(r'Time steps', fontsize=label_font)
+            ax.set_ylabel(r'Joint ' + r'$\theta$', fontsize=label_font)
+            ax.set_xlim([0, forward_traj_theta.shape[0]])
+            # ax.set_ylim([min_theta, max_theta])
+            ax.grid(True, linestyle='--', linewidth=1.5)
+
+            # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
+            cache_dir = os.path.join(dir, f'compare_traj_{our_model}_{prev_model}')
+            # create dir if necessary
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir)
+
+            plt.savefig(os.path.join(dir, cache_dir, f'compare_learned_thetas_traj{traj_idx}.png'), transparent=False, dpi=300, bbox_inches="tight")
+
+
 if __name__ == '__main__':
     eps = 1e-3
     theta1 = np.full((1, 3), np.pi / 2)
@@ -689,12 +871,15 @@ if __name__ == '__main__':
 
     ### plot the traj comparisons with perturbation
     # plot_trajtory_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
-    # plot_theta_vel_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
-    plot_rod_eng('.', initial_thetas1=theta1)
+    # plot_theta_gts_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
+    # plot_rod_eng('.', initial_thetas1=theta1)
 
     ### plot the learned results
     # plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00')
     # plot_trajtory_learned('.', '60_Ham_ob0.40')
     # plot_trajtory_learned('.', '60_LGODE_ob0.40_rflambda0.00')
+
+    ### plot the theta comparison between learned, a previous work, and groundtruth
+    plot_theta_learned_gt_compare('.', '60_DCODE_ob0.40_rflambda100.00', '60_LGODE_ob0.40_rflambda0.00')
 
     pass

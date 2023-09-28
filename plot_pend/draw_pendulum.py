@@ -648,6 +648,9 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
     forward_traj = (forward_traj + 1) / 2 * (max_vec - min_vec) + min_vec
     groundtruth_traj = (groundtruth_traj + 1) / 2 * (max_vec - min_vec) + min_vec
 
+    # TODO get rid of this time for
+    # TODO in the for joint, ax.scatter their location
+    # NOTE consider using different alpha for scatter points
     for t in range(forward_traj.shape[1]):
         # clear the plot
         ax.cla()
@@ -669,44 +672,46 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
             # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
             ax.plot(ball_data[0], ball_data[1], marker='o', markersize=markersize, markevery=500, fillstyle='full', linewidth=line_width, color='k', zorder=10)
 
-        # plot the rigid rod (thick line) between each ball
-        # for 0, its the end point and ball 1
-        for joint_idx in range(forward_traj.shape[0]):
-            ball_data = forward_traj[joint_idx, t, :2]
-            # # de-normalize
-            # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
-            prev_ball_data = forward_traj[joint_idx - 1, t, :2] if joint_idx > 0 else end_pos
-            # if joint_idx > 0:
-            #     # de-normalize
-            #     prev_ball_data = (prev_ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
-            plot_rod, = ax.plot([prev_ball_data[0], ball_data[0]], [prev_ball_data[1], ball_data[1]], linewidth=line_width * 4, color=colors[joint_idx], zorder=9)
-            if joint_idx == 0:
-                plots.append(plot_rod)
-                legends.append('Learned model')
+        ### NOTE below are commented rod and GT plots
 
-        # plot the second traj in dashed line
+        # # plot the rigid rod (thick line) between each ball
+        # # for 0, its the end point and ball 1
+        # for joint_idx in range(forward_traj.shape[0]):
+        #     ball_data = forward_traj[joint_idx, t, :2]
+        #     # # de-normalize
+        #     # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
+        #     prev_ball_data = forward_traj[joint_idx - 1, t, :2] if joint_idx > 0 else end_pos
+        #     # if joint_idx > 0:
+        #     #     # de-normalize
+        #     #     prev_ball_data = (prev_ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
+        #     plot_rod, = ax.plot([prev_ball_data[0], ball_data[0]], [prev_ball_data[1], ball_data[1]], linewidth=line_width * 4, color=colors[joint_idx], zorder=9)
+        #     if joint_idx == 0:
+        #         plots.append(plot_rod)
+        #         legends.append('Our model')
 
-        # plot the joints
-        for joint_idx in range(groundtruth_traj.shape[0]):
-            ball_data = groundtruth_traj[joint_idx, t, :2]
-            # # de-normalize
-            # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
-            ax.plot(ball_data[0], ball_data[1], marker='o', markersize=markersize, markevery=500, fillstyle='left', linewidth=line_width, color='k', zorder=8)
+        # # plot the second traj in dashed line
 
-        # plot the rigid rod (thick line) between each ball
-        # for 0, its the end point and ball 1
-        for joint_idx in range(groundtruth_traj.shape[0]):
-            ball_data = groundtruth_traj[joint_idx, t, :2]
-            # # de-normalize
-            # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
-            prev_ball_data = groundtruth_traj[joint_idx - 1, t, :2] if joint_idx > 0 else end_pos
-            # if joint_idx > 0:
-            #     # de-normalize
-            #     prev_ball_data = (prev_ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
-            plot_rod, = ax.plot([prev_ball_data[0], ball_data[0]], [prev_ball_data[1], ball_data[1]], linewidth=line_width * 2, color=colors[joint_idx], zorder=7, linestyle='--')
-            if joint_idx == 0:
-                plots.append(plot_rod)
-                legends.append('GT')
+        # # plot the joints
+        # for joint_idx in range(groundtruth_traj.shape[0]):
+        #     ball_data = groundtruth_traj[joint_idx, t, :2]
+        #     # # de-normalize
+        #     # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
+        #     ax.plot(ball_data[0], ball_data[1], marker='o', markersize=markersize, markevery=500, fillstyle='left', linewidth=line_width, color='k', zorder=8)
+
+        # # plot the rigid rod (thick line) between each ball
+        # # for 0, its the end point and ball 1
+        # for joint_idx in range(groundtruth_traj.shape[0]):
+        #     ball_data = groundtruth_traj[joint_idx, t, :2]
+        #     # # de-normalize
+        #     # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
+        #     prev_ball_data = groundtruth_traj[joint_idx - 1, t, :2] if joint_idx > 0 else end_pos
+        #     # if joint_idx > 0:
+        #     #     # de-normalize
+        #     #     prev_ball_data = (prev_ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
+        #     plot_rod, = ax.plot([prev_ball_data[0], ball_data[0]], [prev_ball_data[1], ball_data[1]], linewidth=line_width * 2, color=colors[joint_idx], zorder=7, linestyle='--')
+        #     if joint_idx == 0:
+        #         plots.append(plot_rod)
+        #         legends.append('GT')
 
         ax.legend(plots, legends, loc='upper center', fontsize=label_font, ncol=len(legends))
         ax.tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelsize=tick_font)
@@ -720,7 +725,7 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
         ax.grid(True, linestyle='--', linewidth=1.5)
 
         # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
-        cache_dir = os.path.join(dir, f'learned_model_{model_name}_traj_{traj_idx}')
+        cache_dir = os.path.join(dir, f'learned_model_traj_{model_name}', f'traj_{traj_idx}')
         # create dir if necessary
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
@@ -875,11 +880,12 @@ if __name__ == '__main__':
     # plot_rod_eng('.', initial_thetas1=theta1)
 
     ### plot the learned results
-    # plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00')
+    for i in range(5000): # TODO change
+        plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00', traj_idx=i)
     # plot_trajtory_learned('.', '60_Ham_ob0.40')
     # plot_trajtory_learned('.', '60_LGODE_ob0.40_rflambda0.00')
 
     ### plot the theta comparison between learned, a previous work, and groundtruth
-    plot_theta_learned_gt_compare('.', '60_DCODE_ob0.40_rflambda100.00', '60_LGODE_ob0.40_rflambda0.00')
+    # plot_theta_learned_gt_compare('.', '60_DCODE_ob0.40_rflambda100.00', '60_LGODE_ob0.40_rflambda0.00')
 
     pass

@@ -27,11 +27,23 @@ def _energy_theta(loc, vel):
         K = stick_mass * stick_length * stick_length / 6 * (9 * vel[1] * vel[0] * np.cos(loc[0] - loc[1]) + 3 * vel[2] * vel[0] * np.cos(loc[0] - loc[2]) +
                                                             3 * vel[2] * vel[1] * np.cos(loc[1] - loc[2]) + 7 * vel[0] * vel[0] + 4 * vel[1] * vel[1] + 1 * vel[2] * vel[2])
 
-        print('U: ', U)
-        print('K: ', K)
-        print('energy:', U + K)
+        U_1 = -stick_mass * stick_length * g / 2 * (1 * np.cos(loc[0]))
+        U_2 = -stick_mass * stick_length * g / 2 * (2 * np.cos(loc[0]) + 1 * np.cos(loc[1]))
+        U_3 = -stick_mass * stick_length * g / 2 * (2 * np.cos(loc[0]) + 2 * np.cos(loc[1]) + 1 * np.cos(loc[2]))
 
-        return U + K, U, K
+        K_1 = stick_mass * stick_length * stick_length / 6 * (vel[0] * vel[0])
+        K_2 = stick_mass * stick_length * stick_length * (vel[0] * vel[0] / 2 + vel[1] * vel[1] / 6 + vel[1] * vel[0] * np.cos(loc[0] - loc[1]) / 2)
+        K_3 = stick_mass * stick_length * stick_length * (vel[0] * vel[0] / 2 + vel[1] * vel[1] / 2 + vel[2] * vel[2] / 6 + vel[1] * vel[0] * np.cos(loc[0] - loc[1]) +
+                                                          vel[2] * vel[0] * np.cos(loc[0] - loc[2]) / 2 + vel[2] * vel[1] * np.cos(loc[1] - loc[2]) / 2)
+
+        # print('U: ', U)
+        # print('U_1+U_2+U_3: ', U_1 + U_2 + U_3)
+        # print('K: ', K)
+        # print('K_1+K_2+K_3: ', K_1 + K_2 + K_3)
+        # print('energy:', U + K)
+        # exit(1)
+
+        return U + K, U, K, np.array([K_1, K_2, K_3]), np.array([U_1, U_2, U_3])
 
 
 def _energy(linear_loc, linear_vel):
@@ -227,6 +239,123 @@ def plot_trajtory_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initi
             os.makedirs(cache_dir)
         # dump to the same cache dir
         plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
+
+
+def plot_rod_eng(dir, initial_thetas1=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
+    # now uses the initial_thetas to simulate a traj in the same way as the synthetic sim
+    fig, ax = plt.subplots(1, 1, figsize=(18, 12))
+
+    # read from the folder traj/initial_thetas_T_sample_freq/data.pkl
+    # the loaded data is [loc, vel, loc_theta, vel_theta, edges]
+    cache_dir1 = os.path.join(dir, f'traj_{initial_thetas1[0, 0]}_{initial_thetas1[0, 1]}_{initial_thetas1[0, 2]}_{T}_{sample_freq}')
+    loc1, vel1, loc_theta1, vel_theta1, edges1 = pickle.load(open(os.path.join(dir, cache_dir1, 'data.pkl'), 'rb'))
+
+    T, U, K, K_rods, U_rods = [], [], [], [], []
+    # gen energy for each traj
+    for t in range(loc1.shape[0]):
+        t, u, k, k_rods, u_rods = _energy_theta(loc1[t, 0], loc1[t, 0])
+        T.append(t)
+        U.append(u)
+        K.append(k)
+        K_rods.append(k_rods)
+        U_rods.append(u_rods)
+    T = np.array(T)
+    U = np.array(U)
+    K = np.array(K)
+    K_rods = np.array(K_rods)
+    U_rods = np.array(U_rods)
+
+    # print(K_rods.shape)
+    # exit(1)
+
+    # min_T, max_T = np.min(T), np.max(T)
+    # min_U, max_U = np.min(U), np.max(U)
+    # min_K, max_K = np.min(K), np.max(K)
+
+    # max_eng = max(max_T, max_U, max_K)
+    # min_eng = min(min_T, min_U, min_K)
+
+    lines = ['-', '--', '-.']
+    for t in range(loc1.shape[0] - 1, loc1.shape[0]):
+        # clear the plot
+        ax.cla()
+        plots = []
+        legends = []
+
+        # plot the last joint theta log
+        lines = ['-', '--', '-.']
+        for t in range(loc1.shape[0] - 1, loc1.shape[0]):
+            # clear the plot
+            ax.cla()
+            plots = []
+            legends = []
+
+            # plot the last joint theta log
+            lines = ['-', '--', '-.']
+            for rod_idx in range(3):
+                # tmpT = T[:t + 1]
+                tmpU = U_rods[:t + 1, rod_idx]
+                tmpK = K_rods[:t + 1, rod_idx]
+                tmpT = tmpU + tmpK
+
+                frames = np.arange(t + 1)
+
+                plot_U, = ax.plot(frames,
+                                  tmpU,
+                                  marker=markers[rod_idx * 3 + 0],
+                                  markersize=markersize,
+                                  markevery=50,
+                                  fillstyle='none',
+                                  linewidth=line_width,
+                                  linestyle=lines[rod_idx],
+                                  color=colors[0])
+                plot_K, = ax.plot(frames,
+                                  tmpK,
+                                  marker=markers[rod_idx * 3 + 1],
+                                  markersize=markersize,
+                                  markevery=50,
+                                  fillstyle='none',
+                                  linewidth=line_width,
+                                  linestyle=lines[rod_idx],
+                                  color=colors[1])
+                plot_T, = ax.plot(frames,
+                                  tmpT,
+                                  marker=markers[rod_idx * 3 + 2],
+                                  markersize=markersize,
+                                  markevery=50,
+                                  fillstyle='none',
+                                  linewidth=line_width,
+                                  linestyle=lines[rod_idx],
+                                  color=colors[2])
+
+                plots.append(plot_U)
+                plots.append(plot_K)
+                plots.append(plot_T)
+                if rod_idx == 0:
+                    legends.append(rf'Potential Energy of Rod$_{rod_idx+1}$')
+                    legends.append(rf'Kinetic Energy of Rod$_{rod_idx+1}$')
+                    legends.append(rf'Total Energy of Rod$_{rod_idx+1}$')
+                else:
+                    legends.append(rf'Rod$_{rod_idx+1}$')
+                    legends.append(rf'Rod$_{rod_idx+1}$')
+                    legends.append(rf'Rod$_{rod_idx+1}$')
+
+            # # print total energy
+            # tot_T = T[:t + 1]
+            # plot_T, = ax.plot(frames, tot_T, fillstyle='none', linewidth=line_width, linestyle=':', color='k')
+            # plots.append(plot_T)
+            # # legends.append(r'Total Energy')
+
+            ax.legend(plots, legends, loc='upper center', fontsize=label_font, ncol=3)
+            ax.tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelsize=tick_font)
+            ax.get_xaxis().set_visible(True)
+            ax.set_xlabel(r'Time steps', fontsize=label_font)
+            ax.set_ylabel(r'Energies', fontsize=label_font)
+            ax.set_xlim([0, loc1.shape[0]])
+            ax.set_ylim([-26, 16])
+            ax.grid(True, linestyle='--', linewidth=1.5)
+
+            plt.savefig(os.path.join(dir, cache_dir1, f'plot_eng_rods_{t}.png'), transparent=False, dpi=300, bbox_inches="tight")
 
 
 def plot_eng_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
@@ -561,7 +690,7 @@ if __name__ == '__main__':
     ### plot the traj comparisons with perturbation
     # plot_trajtory_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
     # plot_theta_vel_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
-    plot_eng_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
+    plot_rod_eng('.', initial_thetas1=theta1)
 
     ### plot the learned results
     # plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00')

@@ -189,7 +189,7 @@ def plot_trajtory_full(dir, initial_thetas=np.full((1, 3), np.pi / 2), T=32000, 
         ax.grid(True, linestyle='--', linewidth=1.5)
 
         # dump to the same cache dir
-        plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
+        plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.pdf'), transparent=False, dpi=paint_res, bbox_inches="tight")
 
 
 def plot_trajtory_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
@@ -288,7 +288,7 @@ def plot_trajtory_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initi
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         # dump to the same cache dir
-        plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
+        plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.pdf'), transparent=False, dpi=paint_res, bbox_inches="tight")
 
 
 def plot_rod_eng(dir, initial_thetas1=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
@@ -405,7 +405,7 @@ def plot_rod_eng(dir, initial_thetas1=np.full((1, 3), np.pi / 2), T=32000, sampl
             ax.set_ylim([-26, 16])
             ax.grid(True, linestyle='--', linewidth=1.5)
 
-            plt.savefig(os.path.join(dir, cache_dir1, f'plot_eng_rods_{t}.png'), transparent=False, dpi=300, bbox_inches="tight")
+            plt.savefig(os.path.join(dir, cache_dir1, f'plot_eng_rods_{t}.pdf'), transparent=False, dpi=300, bbox_inches="tight")
 
 
 def plot_eng_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
@@ -525,7 +525,7 @@ def plot_eng_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_th
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
-            plt.savefig(os.path.join(dir, cache_dir, f'compare_eng3_{t}.png'), transparent=False, dpi=300, bbox_inches="tight")
+            plt.savefig(os.path.join(dir, cache_dir, f'compare_eng3_{t}.pdf'), transparent=False, dpi=300, bbox_inches="tight")
 
 
 def plot_theta_gts_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), initial_thetas2=np.full((1, 3), np.pi / 2), initial_thetas3=np.full((1, 3), np.pi / 2), T=32000, sample_freq=40):
@@ -608,7 +608,7 @@ def plot_theta_gts_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), init
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
-            plt.savefig(os.path.join(dir, cache_dir, f'compare_theta3_{t}.png'), transparent=False, dpi=300, bbox_inches="tight")
+            plt.savefig(os.path.join(dir, cache_dir, f'compare_theta3_{t}.pdf'), transparent=False, dpi=300, bbox_inches="tight")
 
 
 def plot_trajtory_learned(dir, model_name, traj_idx=0):
@@ -742,7 +742,7 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     # dump to the same cache dir
-    plt.savefig(os.path.join(dir, cache_dir, f'traj_{traj_idx}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
+    plt.savefig(os.path.join(dir, cache_dir, f'traj_{traj_idx}.pdf'), transparent=False, dpi=paint_res, bbox_inches="tight")
 
 
 def plot_theta_learned_gt_compare(dir, our_model, prev_model, traj_idx=40):
@@ -869,7 +869,7 @@ def plot_theta_learned_gt_compare(dir, our_model, prev_model, traj_idx=40):
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
-            plt.savefig(os.path.join(dir, cache_dir, f'compare_learned_thetas_traj{traj_idx}.png'), transparent=False, dpi=300, bbox_inches="tight")
+            plt.savefig(os.path.join(dir, cache_dir, f'compare_learned_thetas_traj{traj_idx}.pdf'), transparent=False, dpi=300, bbox_inches="tight")
 
 
 if __name__ == '__main__':
@@ -884,20 +884,18 @@ if __name__ == '__main__':
     # gen_trajtory('.', initial_thetas=theta3)
 
     ### plot the traj without perturbation
-    # plot_trajtory_full('.', initial_thetas=theta1)
+    plot_trajtory_full('.', initial_thetas=theta1)
 
     ### plot the traj comparisons with perturbation
-    # plot_trajtory_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
-    # plot_theta_gts_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
-    # plot_rod_eng('.', initial_thetas1=theta1)
+    plot_trajtory_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
+    plot_theta_gts_compare('.', initial_thetas1=theta1, initial_thetas2=theta2, initial_thetas3=theta3)
+    plot_rod_eng('.', initial_thetas1=theta1)
 
     ### plot the learned results
-    for i in range(1):  # TODO change
-        plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00', traj_idx=i)
-    # plot_trajtory_learned('.', '60_Ham_ob0.40')
-    # plot_trajtory_learned('.', '60_LGODE_ob0.40_rflambda0.00')
-
     ### plot the theta comparison between learned, a previous work, and groundtruth
-    # plot_theta_learned_gt_compare('.', '60_DCODE_ob0.40_rflambda100.00', '60_LGODE_ob0.40_rflambda0.00')
+    for i in range(1, 5000, 100):  # TODO change
+        plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00', traj_idx=i)
+        plot_trajtory_learned('.', '60_LGODE_ob0.40_rflambda0.00', traj_idx=i)
+        plot_theta_learned_gt_compare('.', '60_DCODE_ob0.40_rflambda100.00', '60_LGODE_ob0.40_rflambda0.00', traj_idx=i)
 
     pass

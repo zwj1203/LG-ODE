@@ -596,7 +596,7 @@ def plot_theta_gts_compare(dir, initial_thetas1=np.full((1, 3), np.pi / 2), init
             ax.set_xlabel(r'Time steps', fontsize=label_font)
             ax.set_ylabel(r'Joint ' + r'$\theta$', fontsize=label_font)
             ax.set_xlim([0, loc1.shape[0]])
-            # ax.set_ylim([min_theta, max_theta])
+            ax.set_ylim([min_theta, max_theta])
             ax.grid(True, linestyle='--', linewidth=1.5)
 
             # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
@@ -651,26 +651,38 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
     # TODO get rid of this time for
     # TODO in the for joint, ax.scatter their location
     # NOTE consider using different alpha for scatter points
-    for t in range(forward_traj.shape[1]):
-        # clear the plot
-        ax.cla()
-        plots = []
-        legends = []
+    # for t in range(forward_traj.shape[1]):
+    # clear the plot
+    ax.cla()
+    plots = []
+    legends = []
 
-        # end point pos is [0,0]
-        end_pos = np.array([0, 0])
-        plot_end, = ax.plot(end_pos[0], end_pos[1], marker='o', markersize=markersize, markevery=500, fillstyle='full', linewidth=line_width, color='k', zorder=10)
-        plots.append(plot_end)
-        legends.append('Joint Locations')
+    # calcualte the alpha as transparency
+    frames = np.arange(forward_traj.shape[1])
+    alpha = frames / forward_traj.shape[1] * 0.8 + 0.2
+    # scatte the joints location
+    for joint_idx in range(forward_traj.shape[0]):
+        ball_data = forward_traj[joint_idx, :, :2]
+        # plot_i0 is only plotting the last time snapshot for the sake of alpha for legends
+        plot_i0 = ax.scatter(ball_data[-1, 0], ball_data[-1, 1], marker=markers[joint_idx], s=4 * markersize, linewidth=line_width, color=colors[joint_idx], alpha=1)
+        plot_i = ax.scatter(ball_data[:, 0], ball_data[:, 1], marker=markers[joint_idx], s=4 * markersize, linewidth=line_width, color=colors[joint_idx], alpha=alpha)
+        plots.append(plot_i0)
+        legends.append(f'Joint {joint_idx}')
+
+        # # end point pos is [0,0]
+        # end_pos = np.array([0, 0])
+        # plot_end, = ax.plot(end_pos[0], end_pos[1], marker='o', markersize=markersize, markevery=500, fillstyle='full', linewidth=line_width, color='k', zorder=10)
+        # plots.append(plot_end)
+        # legends.append('Joint Locations')
 
         # plot the first traj in solid line
 
-        # plot the joints
-        for joint_idx in range(forward_traj.shape[0]):
-            ball_data = forward_traj[joint_idx, t, :2]
-            # # de-normalize
-            # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
-            ax.plot(ball_data[0], ball_data[1], marker='o', markersize=markersize, markevery=500, fillstyle='full', linewidth=line_width, color='k', zorder=10)
+        # # plot the joints
+        # for joint_idx in range(forward_traj.shape[0]):
+        #     ball_data = forward_traj[joint_idx, t, :2]
+        #     # # de-normalize
+        #     # ball_data = (ball_data + 1) / 2 * (max_loc - min_loc) + min_loc
+        #     ax.plot(ball_data[0], ball_data[1], marker='o', markersize=markersize, markevery=500, fillstyle='full', linewidth=line_width, color='k', zorder=10)
 
         ### NOTE below are commented rod and GT plots
 
@@ -713,24 +725,24 @@ def plot_trajtory_learned(dir, model_name, traj_idx=0):
         #         plots.append(plot_rod)
         #         legends.append('GT')
 
-        ax.legend(plots, legends, loc='upper center', fontsize=label_font, ncol=len(legends))
-        ax.tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelsize=tick_font)
-        ax.xaxis.offsetText.set_fontsize(label_font)
-        ax.set_xlabel(r'X [m]', fontsize=label_font)
-        ax.set_ylabel(r'Y [m]', fontsize=label_font)
-        # plot in [3x3] box
-        # # set the x lenght to be the same as y length
-        plt.xlim(-3.25, 3.25)
-        plt.ylim(-3, 1.0)
-        ax.grid(True, linestyle='--', linewidth=1.5)
+    ax.legend(plots, legends, loc='upper center', fontsize=label_font, ncol=len(legends))
+    ax.tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelsize=tick_font)
+    ax.xaxis.offsetText.set_fontsize(label_font)
+    ax.set_xlabel(r'X [m]', fontsize=label_font)
+    ax.set_ylabel(r'Y [m]', fontsize=label_font)
+    # plot in [3x3] box
+    # # set the x lenght to be the same as y length
+    plt.xlim(-3.25, 3.25)
+    plt.ylim(-3, 1.0)
+    ax.grid(True, linestyle='--', linewidth=1.5)
 
-        # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
-        cache_dir = os.path.join(dir, f'learned_model_traj_{model_name}', f'traj_{traj_idx}')
-        # create dir if necessary
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
-        # dump to the same cache dir
-        plt.savefig(os.path.join(dir, cache_dir, f'frame{t}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
+    # the compare cache dir is traj_thetas1_thetas2_thetas_T_sample_freq
+    cache_dir = os.path.join(dir, f'learned_model_traj_{model_name}')
+    # create dir if necessary
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    # dump to the same cache dir
+    plt.savefig(os.path.join(dir, cache_dir, f'traj_{traj_idx}.png'), transparent=False, dpi=paint_res, bbox_inches="tight")
 
 
 def plot_theta_learned_gt_compare(dir, our_model, prev_model, traj_idx=40):
@@ -880,7 +892,7 @@ if __name__ == '__main__':
     # plot_rod_eng('.', initial_thetas1=theta1)
 
     ### plot the learned results
-    for i in range(5000): # TODO change
+    for i in range(1):  # TODO change
         plot_trajtory_learned('.', '60_DCODE_ob0.40_rflambda100.00', traj_idx=i)
     # plot_trajtory_learned('.', '60_Ham_ob0.40')
     # plot_trajtory_learned('.', '60_LGODE_ob0.40_rflambda0.00')
